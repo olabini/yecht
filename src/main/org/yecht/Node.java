@@ -76,81 +76,60 @@ public class Node {
         str.memcpy(s.ptr, len);
     }
 
-    /*
-void
-syck_str_blow_away_commas( SyckNode *n )
-{
-    char *go, *end;
-
-    go = n->data.str->ptr;
-    end = go + n->data.str->len;
-    while ( *(++go) != '\0' )
-    {
-        if ( *go == ',' )
-        {
-            n->data.str->len -= 1;
-            memmove( go, go + 1, end - go );
-            end -= 1;
+    // syck_str_blow_away_commas
+    public static void strBlowAwayCommas(Node n) {
+        Data.Str d = ((Data.Str)n.data);
+        byte[] buf = d.ptr.buffer;
+        int go = d.ptr.start;
+        int end = go + d.len;
+        for(;go < end;go++) {
+            if(buf[go] == ',') {
+                d.len--;
+                end--;
+                System.arraycopy(buf, go+1, buf, go, go-end);
+            }
         }
     }
-}
 
-char *
-syck_str_read( SyckNode *n )
-{
-    ASSERT( n != NULL );
-    return n->data.str->ptr;
-}
-
-SyckNode *
-syck_new_map( SYMID key, SYMID value )
-{
-    SyckNode *n;
-
-    n = syck_alloc_map();
-    syck_map_add( n, key, value );
-
-    return n;
-}
-
-void
-syck_map_empty( SyckNode *n )
-{
-    struct SyckMap *m;
-    ASSERT( n != NULL );
-    ASSERT( n->data.list != NULL );
-
-    S_FREE( n->data.pairs->keys );
-    S_FREE( n->data.pairs->values );
-    m = n->data.pairs;
-    m->idx = 0;
-    m->capa = ALLOC_CT;
-    m->keys = S_ALLOC_N( SYMID, m->capa );
-    m->values = S_ALLOC_N( SYMID, m->capa );
-}
-
-void
-syck_map_add( SyckNode *map, SYMID key, SYMID value )
-{
-    struct SyckMap *m;
-    long idx;
-
-    ASSERT( map != NULL );
-    ASSERT( map->data.pairs != NULL );
-    
-    m = map->data.pairs;
-    idx = m->idx;
-    m->idx += 1;
-    if ( m->idx > m->capa )
-    {
-        m->capa += ALLOC_CT;
-        S_REALLOC_N( m->keys, SYMID, m->capa );
-        S_REALLOC_N( m->values, SYMID, m->capa );
+    // syck_str_read
+    public static Pointer strRead(Node n) {
+        return ((Data.Str)n.data).ptr;
     }
-    m->keys[idx] = key;
-    m->values[idx] = value;
-}
 
+    // syck_new_map
+    public static Node newMap(long key, long value) {
+        Node n = allocMap();
+        mapAdd(n, key, value);
+        return n;
+    }
+
+    // syck_map_empty
+    public static void mapEmpty(Node n) {
+        Data.Map m = (Data.Map)n.data;
+        m.idx = 0;
+        m.capa = YAML.ALLOC_CT;
+        m.keys = new long[m.capa];
+        m.values = new long[m.capa];
+    }
+
+    // syck_map_add
+    public static void mapAdd(Node map, long key, long value) {
+        Data.Map m = (Data.Map)map.data;
+        int idx = m.idx;
+        m.idx++;
+
+        if(m.idx > m.capa) {
+            m.capa += YAML.ALLOC_CT;
+            m.keys = YAML.realloc(m.keys, m.capa);
+            m.values = YAML.realloc(m.values, m.capa);
+        }
+        m.keys[idx] = key;
+        m.values[idx] = value;
+    }
+
+
+
+    /*
 void
 syck_map_update( SyckNode *map1, SyckNode *map2 )
 {

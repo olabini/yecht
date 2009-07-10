@@ -16,4 +16,10 @@ public class YAML {
 
     public final static int ALLOC_CT = 8;
     public final static int BUFFERSIZE = 4096;
+
+    public static long[] realloc(long[] input, int size) {
+        long[] newArray = new long[size];
+        System.arraycopy(input, 0, newArray, 0, input.length);
+        return newArray;
+    }
 }
