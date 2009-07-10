@@ -25,8 +25,7 @@ public abstract class Data {
 
     public static class Str extends Data {
         ScalarStyle style;
-        byte[] buffer;
-        int ptr;
+        Pointer ptr;
         int len;
     }
 }// Data
