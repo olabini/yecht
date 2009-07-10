@@ -4,6 +4,7 @@
 package org.yecht;
 
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  *
@@ -26,7 +27,7 @@ public class Parser {
     int force_token;
     int eof;
     JechtIO io;
-    Map anchors, bad_anchors;
+    Map<String, Node> anchors, bad_anchors;
     Map syms;
     Level[] levels;
     int lvl_idx;
@@ -280,5 +281,98 @@ public class Parser {
         // TODO: add real parse call here
         //        yechtparse();
         return root;
+    }
+
+    // syck_hdlr_add_node
+    public long addNode(Node n) {
+        long id;
+        if(n.id == -1) {
+            n.id = handler.handle(this, n);
+        }
+        id = n.id;
+        return id;
+    }
+
+    // syck_hdlr_add_anchor
+    public Node addAnchor(String a, Node n) {
+        n.anchor = a;
+        if(bad_anchors != null) {
+            if(bad_anchors.containsKey(a)) {
+                if(n.kind != KindTag.Str) {
+                    Node bad = bad_anchors.get(a);
+                    n.id = bad.id;
+                    handler.handle(this, n);
+                }
+            }
+        }
+        if(anchors == null) {
+            anchors = new HashMap<String, Node>();
+        }
+        anchors.put(a, n);
+        return n;
+    }
+
+    // syck_hdlr_remove_anchor
+    public void removeAnchor(String a) {
+        if(anchors == null) {
+            anchors = new HashMap<String, Node>();
+        }
+        anchors.put(a, null);
+    }
+
+    // syck_hdlr_get_anchor
+    public Node getAnchor(String a) {
+        Node n = null;
+        if(anchors != null) {
+            if(anchors.containsKey(a)) {
+                n = anchors.get(a);
+                if(n != null) {
+                    return n;
+                } else {
+                    if(bad_anchors == null) {
+                        bad_anchors = new HashMap<String, Node>();
+                    }
+                    if(!bad_anchors.containsKey(a)) {
+                        n = bad_anchor_handler.handle(this, a);
+                        bad_anchors.put(a, n);
+                    }
+                }
+            }
+        }
+
+        if(n == null) {
+            n = bad_anchor_handler.handle(this, a);
+        }
+
+        if(n.anchor == null) {
+            n.anchor = a;
+        }
+
+        return n;
+    }
+
+    // syck_add_transfer
+    public static void addTransfer(String uri, Node n, boolean taguri) {
+        if(!taguri) {
+            n.type_id = uri;
+            return;
+        }
+        // TODO fix when this has been sorted
+        //        n.type_id = typeIdToUri(uri);
+    }
+
+    // syck_xprivate
+    public static String xprivate(String type_id) {
+        return "x-private:" + type_id;
+    }
+
+    // syck_taguri
+    public static String taguri(String domain, String type_id) {
+        return "tag:" + domain + ":" + type_id;
+    }
+
+    // syck_try_implicit
+    public static boolean tryImplicit(Node n) {
+        return true;
     }
 }// Parser
