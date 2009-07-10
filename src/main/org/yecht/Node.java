@@ -68,8 +68,8 @@ public class Node {
 
     // syck_replace_str
     // syck_replace_str2
-    public static void replaceStr(Node n, Pointer str, int len, ScalarStyle style) {
-        Data.Str s = (Data.Str)n.data;
+    public void replaceStr(Pointer str, int len, ScalarStyle style) {
+        Data.Str s = (Data.Str)data;
         s.ptr = Pointer.create(new byte[len], 0);
         s.len = len;
         s.style = style;
@@ -77,8 +77,8 @@ public class Node {
     }
 
     // syck_str_blow_away_commas
-    public static void strBlowAwayCommas(Node n) {
-        Data.Str d = ((Data.Str)n.data);
+    public void strBlowAwayCommas() {
+        Data.Str d = ((Data.Str)data);
         byte[] buf = d.ptr.buffer;
         int go = d.ptr.start;
         int end = go + d.len;
@@ -92,20 +92,20 @@ public class Node {
     }
 
     // syck_str_read
-    public static Pointer strRead(Node n) {
-        return ((Data.Str)n.data).ptr;
+    public Pointer strRead() {
+        return ((Data.Str)data).ptr;
     }
 
     // syck_new_map
     public static Node newMap(long key, long value) {
         Node n = allocMap();
-        mapAdd(n, key, value);
+        n.mapAdd(key, value);
         return n;
     }
 
     // syck_map_empty
-    public static void mapEmpty(Node n) {
-        Data.Map m = (Data.Map)n.data;
+    public void mapEmpty() {
+        Data.Map m = (Data.Map)data;
         m.idx = 0;
         m.capa = YAML.ALLOC_CT;
         m.keys = new long[m.capa];
@@ -113,8 +113,8 @@ public class Node {
     }
 
     // syck_map_add
-    public static void mapAdd(Node map, long key, long value) {
-        Data.Map m = (Data.Map)map.data;
+    public void mapAdd(long key, long value) {
+        Data.Map m = (Data.Map)data;
         int idx = m.idx;
         m.idx++;
 
