@@ -9,8 +9,12 @@ package org.yecht;
  */
 public abstract class JechtIO {
     public static class File extends JechtIO {
-        public java.io.FileInputStream ptr;
+        public java.io.InputStream ptr;
         public IoFileRead read;
+        public File(java.io.InputStream is, IoFileRead read) {
+            this.ptr = is;
+            this.read = read;
+        }
     }
 
     public static class Str extends JechtIO {

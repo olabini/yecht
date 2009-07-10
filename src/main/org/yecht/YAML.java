@@ -22,4 +22,10 @@ public class YAML {
         System.arraycopy(input, 0, newArray, 0, input.length);
         return newArray;
     }
+
+    public static Level[] realloc(Level[] input, int size) {
+        Level[] newArray = new Level[size];
+        System.arraycopy(input, 0, newArray, 0, input.length);
+        return newArray;
+    }
 }

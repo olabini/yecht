@@ -145,178 +145,140 @@ public class Parser {
         this.input_type = input_type;
     }
 
+    // syck_parser_file
+    public void file(java.io.InputStream fp, IoFileRead read) {
+        resetCursor();
+        io_type = IOType.File;
+        if(read == null) {
+            read = new IoFileRead.Default();
+        }
 
-// void
-// syck_parser_file( SyckParser *p, FILE *fp, SyckIoFileRead read )
-// {
-//     ASSERT( p != NULL );
-//     free_any_io( p );
-// 	syck_parser_reset_cursor( p );
-//     p->io_type = syck_io_file;
-//     p->io.file = S_ALLOC( SyckIoFile );
-//     p->io.file->ptr = fp;
-//     if ( read != NULL )
-//     {
-//         p->io.file->read = read;
-//     }
-//     else
-//     {
-//         p->io.file->read = syck_io_file_read;
-//     }
-// }
+        io = new JechtIO.File(fp, read);
+    }
 
-// void
-// syck_parser_str( SyckParser *p, const char *ptr, long len, SyckIoStrRead read )
-// {
-//     ASSERT( p != NULL );
-//     free_any_io( p );
-// 	syck_parser_reset_cursor( p );
-//     p->io_type = syck_io_str;
-//     p->io.str = S_ALLOC( SyckIoStr );
-//     p->io.str->beg = ptr;
-//     p->io.str->ptr = ptr;
-//     p->io.str->end = ptr + len;
-//     if ( read != NULL )
-//     {
-//         p->io.str->read = read;
-//     }
-//     else
-//     {
-//         p->io.str->read = syck_io_str_read;
-//     }
-// }
+    // syck_parser_str
+    public void str(Pointer ptr, int len, IoStrRead read) {
+        resetCursor();
+        io_type = IOType.Str;
+        JechtIO.Str ss = new JechtIO.Str();
+        io = ss;
+        ss.beg = ptr.start;
+        ss.ptr = ptr;
+        ss.end = ptr.start + len;
+        if(read == null) {
+            ss.read = new IoStrRead.Default();
+        } else {
+            ss.read = read;
+        }
+    }
 
-// void
-// syck_parser_str_auto( SyckParser *p, const char *ptr, SyckIoStrRead read )
-// {
-//     syck_parser_str( p, ptr, strlen( ptr ), read );
-// }
+    // syck_parser_str_auto
+    public void str(Pointer ptr, IoStrRead read) {
+        str(ptr, ptr.buffer.length - ptr.start, read);
+    }
 
-// SyckLevel *
-// syck_parser_current_level( SyckParser *p )
-// {
-//     return &p->levels[p->lvl_idx-1];
-// }
+    // syck_parser_current_level
+    public Level currentLevel() {
+        return levels[lvl_idx-1];
+    }
+    
+    // syck_parser_add_level
+    public void addLevel(int len, LevelStatus status) {
+        if(lvl_idx + 1 > lvl_capa) {
+            lvl_capa += YAML.ALLOC_CT;
+            levels = YAML.realloc(levels, lvl_capa);
+        }
+        levels[lvl_idx] = new Level();
+        levels[lvl_idx].spaces = len;
+        levels[lvl_idx].ncount = 0;
+        levels[lvl_idx].domain = levels[lvl_idx-1].domain;
+        levels[lvl_idx].status = status;
+        lvl_idx++;
+    }
 
-// void 
-// syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
-// {
-//     ASSERT( p != NULL );
-//     if ( p->lvl_idx + 1 > p->lvl_capa )
-//     {
-//         p->lvl_capa += ALLOC_CT;
-//         S_REALLOC_N( p->levels, SyckLevel, p->lvl_capa );
-//     }
+    // syck_move_tokens
+    public int moveTokens() {
+        int count;
+        if(token == null) {
+            return 0;
+        }
 
-//     ASSERT( len > p->levels[p->lvl_idx-1].spaces );
-//     p->levels[p->lvl_idx].spaces = len;
-//     p->levels[p->lvl_idx].ncount = 0;
-//     p->levels[p->lvl_idx].domain = syck_strndup( p->levels[p->lvl_idx-1].domain, strlen( p->levels[p->lvl_idx-1].domain ) );
-//     p->levels[p->lvl_idx].status = status;
-//     p->lvl_idx += 1;
-// }
+        int skip = limit.start - token.start;
+        if(skip < 0) {
+            return 0;
+        }
 
-// long
-// syck_move_tokens( SyckParser *p )
-// {
-//     long count, skip;
-//     ASSERT( p->buffer != NULL );
+        if((count = token.start - buffer.start) != 0) {
+            System.arraycopy(token.buffer, token.start, buffer.buffer, buffer.start, skip);
+            token.start = buffer.start;
+            marker.start -= count;
+            cursor.start -= count;
+            toktmp.start -= count;
+            limit.start -= count;
+            lineptr.start -= count;
+            linectptr.start -= count;
+        }
+        return skip;
+    }
 
-//     if ( p->token == NULL )
-//         return 0;
+    // syck_check_limit
+    public void checkLimit(int len) {
+        if(cursor == null) {
+            cursor = Pointer.create(buffer.buffer, buffer.start);
+            lineptr = Pointer.create(buffer.buffer, buffer.start);
+            linectptr = Pointer.create(buffer.buffer, buffer.start);
+            marker = Pointer.create(buffer.buffer, buffer.start);
+        }
+        limit.start = buffer.start + len;
+    }
 
-//     skip = p->limit - p->token;
-//     if ( skip < 0 )
-//         return 0;
+    // syck_parser_read
+    public int read() throws java.io.IOException {
+        int len = 0;
+        int skip = 0;
+        
+        switch(io_type) {
+        case Str:
+            skip = moveTokens();
+            len = ((JechtIO.Str)io).read.read(buffer, ((JechtIO.Str)io), YAML.BUFFERSIZE-1, skip);
+            break;
+        case File:
+            skip = moveTokens();
+            len = ((JechtIO.File)io).read.read(buffer, ((JechtIO.File)io), YAML.BUFFERSIZE-1, skip);
+            break;
+        default:
+            break;
+        }
+        checkLimit(len);
+        return len;
+    }
 
-//     if ( ( count = p->token - p->buffer ) )
-//     {
-//         S_MEMMOVE( p->buffer, p->token, char, skip );
-//         p->token = p->buffer;
-//         p->marker -= count;
-//         p->cursor -= count;
-//         p->toktmp -= count;
-//         p->limit -= count;
-//         p->lineptr -= count;
-//         p->linectptr -= count;
-//     }
-//     return skip;
-// }
+    // syck_parser_readlen
+    public int read(int max_size) throws java.io.IOException {
+        int len = 0;
+        int skip = 0;
+        
+        switch(io_type) {
+        case Str:
+            skip = moveTokens();
+            len = ((JechtIO.Str)io).read.read(buffer, ((JechtIO.Str)io), max_size, skip);
+            break;
+        case File:
+            skip = moveTokens();
+            len = ((JechtIO.File)io).read.read(buffer, ((JechtIO.File)io), max_size, skip);
+            break;
+        default:
+            break;
+        }
+        checkLimit(len);
+        return len;
+    }
 
-// void
-// syck_check_limit( SyckParser *p, long len )
-// {
-//     if ( p->cursor == NULL )
-//     {
-//         p->cursor = p->buffer;
-//         p->lineptr = p->buffer;
-//         p->linectptr = p->buffer;
-//         p->marker = p->buffer;
-//     }
-//     p->limit = p->buffer + len;
-// }
-
-// long
-// syck_parser_read( SyckParser *p )
-// {
-//     long len = 0;
-//     long skip = 0;
-//     ASSERT( p != NULL );
-//     switch ( p->io_type )
-//     {
-//         case syck_io_str:
-//             skip = syck_move_tokens( p );
-//             len = (p->io.str->read)( p->buffer, p->io.str, SYCK_BUFFERSIZE - 1, skip );
-//             break;
-
-//         case syck_io_file:
-//             skip = syck_move_tokens( p );
-//             len = (p->io.file->read)( p->buffer, p->io.file, SYCK_BUFFERSIZE - 1, skip );
-//             break;
-//     }
-//     syck_check_limit( p, len );
-//     return len;
-// }
-
-// long
-// syck_parser_readlen( SyckParser *p, long max_size )
-// {
-//     long len = 0;
-//     long skip = 0;
-//     ASSERT( p != NULL );
-//     switch ( p->io_type )
-//     {
-//         case syck_io_str:
-//             skip = syck_move_tokens( p );
-//             len = (p->io.str->read)( p->buffer, p->io.str, max_size, skip );
-//             break;
-
-//         case syck_io_file:
-//             skip = syck_move_tokens( p );
-//             len = (p->io.file->read)( p->buffer, p->io.file, max_size, skip );
-//             break;
-//     }
-//     syck_check_limit( p, len );
-//     return len;
-// }
-
-// SYMID
-// syck_parse( SyckParser *p )
-// {
-//     ASSERT( p != NULL );
-
-//     syck_st_free( p );
-//     syck_parser_reset_levels( p );
-//     syckparse( p );
-//     return p->root;
-// }
-
-// void
-// syck_default_error_handler( SyckParser *p, const char *msg )
-// {
-//     printf( "Error at [Line %d, Col %d]: %s\n", 
-//         p->linect,
-//         p->cursor - p->lineptr,
-//         msg );
-// }
+    // syck_parse
+    public long parse() {
+        resetLevels();
+        // TODO: add real parse call here
+        //        yechtparse();
+        return root;
+    }
 }// Parser

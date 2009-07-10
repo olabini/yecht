@@ -5,7 +5,6 @@
 
   -rw-r--r--   1 olabini  olabini   3356 Jul  9 15:36 handler.c
   -rw-r--r--   1 olabini  olabini   7522 Jul  9 15:36 yaml2byte.c
-  -rw-r--r--   1 olabini  olabini  10109 Jul  9 15:36 syck.c
   -rw-r--r--   1 olabini  olabini  13486 Jul  9 15:36 gram.y
   -rw-r--r--   1 olabini  olabini  36365 Jul  9 15:36 emitter.c
 
