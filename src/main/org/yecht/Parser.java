@@ -357,8 +357,7 @@ public class Parser {
             n.type_id = uri;
             return;
         }
-        // TODO fix when this has been sorted
-        //        n.type_id = typeIdToUri(uri);
+        n.type_id = ImplicitScanner.typeIdToUri(uri);
     }
 
     // syck_xprivate

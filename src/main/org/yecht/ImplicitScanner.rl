@@ -2,6 +2,32 @@ package org.yecht;
 
 // Equivalent to implicit.re
 public class ImplicitScanner {
+
+       // try_tag_implicit
+       public static void tryTagImplicit(Node n, boolean taguri) {
+         String tid = "";
+         switch(n.kind) {
+           case Str:
+             Data.Str s = (Data.Str)n.data;
+             tid = matchImplicit(s.ptr, s.len);
+             break;
+           case Seq:
+             tid = "seq";
+             break;
+           case Map:
+             tid = "map";
+             break;
+           default:
+             break;
+         }
+
+         if(taguri) {
+           n.type_id = Parser.taguri(YAML.DOMAIN, tid);
+         } else {
+           n.type_id = tid;
+         }
+       }
+
 %%{
         machine ImplicitScanner;
 
@@ -69,18 +95,29 @@ public class ImplicitScanner {
         TAGDATE = YEAR ( "-" MON )? ( "-" MON )? ;
 
         TypeId :=
-             (TAG ":" DNSNAMERE "," TAGDATE ":")
-          |  (XPRIVATE ":")
-          |  "!"
-          |  (DNSNAMERE "/")
-          |  (DNSNAMERE "," TAGDATE "/")         
-          |  ANY
+             (TAG ":" DNSNAMERE "," TAGDATE ":") %/{ tag = type_id; }
+          |  (XPRIVATE ":")                      %/{ tag = type_id; }
+          |  "!"                                 %/{ tag = Parser.xprivate(type_id.substring(1)); }
+          |  (DNSNAMERE "/")                     %/{   
+                    String domain = type_id.substring(0, p-1) + "." + YAML.DOMAIN;
+                    String uri = Parser.taguri( domain, type_id.substring(p));
+                    tag = uri;
+                }
+          |  (DNSNAMERE "," TAGDATE "/")         %/{   
+                               String domain = type_id.substring(0, p-1);
+                               String uri = Parser.taguri(domain, type_id.substring(p));
+                               tag = uri;
+                            }
+          |  ANY                                 %/{ tag = Parser.taguri(YAML.DOMAIN, type_id); }
           ;          
 }%%
 
 %% write data nofinal;
-
-   public String recognize(byte[] data, int start, int len) {
+   // syck_match_implicit
+   public static String matchImplicit(Pointer ptr, int len) {
+       String type_id = null; // unused
+       byte[] data = ptr.buffer;
+       int start = ptr.start;
        int cs;
        int act;
        int have = 0;
@@ -93,6 +130,44 @@ public class ImplicitScanner {
        String tag = "str";
               
        cs = ImplicitScanner_en_Implicit;       
+
+%% write exec;
+
+       return tag;
+   }
+
+   // syck_tagcmp
+   public static boolean tagcmp(String tag1, String tag2) {
+       if(tag1 == tag2) return true;
+       if(tag1 == null || tag2 == null) return false;
+       if(tag1.equals(tag2)) return true;
+       int slen1 = tag1.indexOf('#');
+       if(slen1 == -1) slen1 = tag1.length();
+       int slen2 = tag2.indexOf('#');
+       if(slen2 == -1) slen2 = tag2.length();
+       return tag1.substring(0, slen1).equals(tag2.substring(0,slen2));
+   }
+
+   // syck_type_id_to_uri
+   public static String typeIdToUri(String type_id) {
+       byte[] data = null;
+       try {
+         data = type_id.getBytes("ISO8859-1");
+       } catch(Exception e) {}
+
+       int start = 0;
+       int cs;
+       int act;
+       int have = 0;
+       int nread = 0;
+       int p=start;
+       int pe = p+data.length;
+       int tokstart = -1;
+       int tokend = -1;
+       int eof = pe;
+       String tag = null;
+              
+       cs = ImplicitScanner_en_TypeId;       
 
 %% write exec;
 
