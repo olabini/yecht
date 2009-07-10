@@ -6,7 +6,7 @@ public class TokenScanner {
         machine TokenScanner;
 
         YWORDC = [A-Za-z0-9_\-] ;
-        YWORDP = [A-Za-z0-9_-\.] ;
+        YWORDP = [A-Za-z0-9_\-\.] ;
         LF = ( "\n" | "\r\n" ) ;
         SPC = " " ;
         TAB = "\t" ;
@@ -55,7 +55,75 @@ public class TokenScanner {
          |  NULL
          |  ANY
          ;
+
+       Directive :=
+            DIR
+         |  (SPCTAB+)
+         |  ANY
+         ;
+
+       Plain :=
+            YINDENT
+         |  ALLX
+         |  ICOMMA
+         |  IMAPC
+         |  ISEQC
+         |  " #"
+         |  NULL
+         |  SPCTAB
+         |  NULL
+         ;
+
+       SingleQuote :=
+            YINDENT
+         |  "''"
+         |  ("'" | NULL)
+         |  ANY
+         ;
+
+       DoubleQuote :=
+            YINDENT
+         |  ("\\" ESCSEQ)
+         |  ("\\x" HEX HEX)
+         |  ("\\" SPC* LF)
+         |  ("\"" | NULL)
+         |  ANY
+         ;
+
+       TransferMethod :=
+            ( ENDSPC | NULL )
+         |  ("\\" ESCSEQ)
+         |  ("\\x" HEX HEX)
+         |  ANY
+         ;
+
+       ScalarBlock :=
+            YINDENT
+         |  "#"
+         |  NULL
+         |  ("---" ENDSPC)
+         |  ANY
+         ;
+
+       Comment :=
+            ( LF+ | NULL )
+         |  ANY
+         ;       
 }%%
 
 %% write data nofinal;
+
+   public void recognize(byte[] data, int start, int len) {
+       int cs;
+       int act;
+       int have = 0;
+       int nread = 0;
+       int p=start;
+       int pe = p+len;
+       int tokstart = -1;
+       int tokend = -1;
+              
+       cs = TokenScanner_en_Header;
+%% write exec;
+   }
 }
