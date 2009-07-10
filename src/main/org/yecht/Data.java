@@ -1,0 +1,32 @@
+/*
+ * See LICENSE file in distribution for copyright and licensing information.
+ */
+package org.yecht;
+
+/**
+ *
+ * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
+ */
+public abstract class Data {
+    public static class Map extends Data {
+        MapStyle style;
+        long[] keys;
+        long[] values;
+        int capa;
+        int idx;
+    }
+
+    public static class Seq extends Data {
+        SeqStyle style;
+        long[] items;
+        int capa;
+        int idx;
+    }
+
+    public static class Str extends Data {
+        ScalarStyle style;
+        byte[] buffer;
+        int ptr;
+        int len;
+    }
+}// Data
