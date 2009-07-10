@@ -158,117 +158,65 @@ public class Node {
         return ((Data.Map)data).idx;
     }
 
-    /*
-void
-syck_map_assign( SyckNode *map, enum map_part p, long idx, SYMID id )
-{
-    struct SyckMap *m;
-
-    ASSERT( map != NULL );
-    m = map->data.pairs;
-    ASSERT( m != NULL );
-    if ( p == map_key )
-    {
-        m->keys[idx] = id;
+    // syck_map_assign
+    public void mapAssign(MapPart p, int idx, long id) {
+        Data.Map m = (Data.Map)data;
+        if(p == MapPart.Key) {
+            m.keys[idx] = id;
+        } else {
+            m.values[idx] = id;
+        }
     }
-    else
-    {
-        m->values[idx] = id;
+
+    // syck_map_read
+    public long mapRead(MapPart p, int idx) {
+        Data.Map m = (Data.Map)data;
+        if(p == MapPart.Key) {
+            return m.keys[idx];
+        } else {
+            return m.values[idx];
+        }
     }
-}
 
-SYMID
-syck_map_read( SyckNode *map, enum map_part p, long idx )
-{
-    struct SyckMap *m;
-
-    ASSERT( map != NULL );
-    m = map->data.pairs;
-    ASSERT( m != NULL );
-    if ( p == map_key )
-    {
-        return m->keys[idx];
+    // syck_new_seq
+    public static Node newSeq(long value) {
+        Node n = allocSeq();
+        n.seqAdd(value);
+        return n;
     }
-    else
-    {
-        return m->values[idx];
+
+    // syck_seq_empty
+    public void seqEmpty() {
+        Data.Seq s = (Data.Seq)data;
+        s.idx = 0;
+        s.capa = YAML.ALLOC_CT;
+        s.items = new long[s.capa];
     }
-}
 
-SyckNode *
-syck_new_seq( SYMID value )
-{
-    SyckNode *n;
-
-    n = syck_alloc_seq();
-    syck_seq_add( n, value );
-
-    return n;
-}
-
-void
-syck_seq_empty( SyckNode *n )
-{
-    struct SyckSeq *s;
-    ASSERT( n != NULL );
-    ASSERT( n->data.list != NULL );
-
-    S_FREE( n->data.list->items );
-    s = n->data.list;
-    s->idx = 0;
-    s->capa = ALLOC_CT;
-    s->items = S_ALLOC_N( SYMID, s->capa );
-}
-
-void
-syck_seq_add( SyckNode *arr, SYMID value )
-{
-    struct SyckSeq *s;
-    long idx;
-
-    ASSERT( arr != NULL );
-    ASSERT( arr->data.list != NULL );
-    
-    s = arr->data.list;
-    idx = s->idx;
-    s->idx += 1;
-    if ( s->idx > s->capa )
-    {
-        s->capa += ALLOC_CT;
-        S_REALLOC_N( s->items, SYMID, s->capa );
+    // syck_seq_add
+    public void seqAdd(long value) {
+        Data.Seq s = (Data.Seq)data;
+        int idx = s.idx;
+        s.idx++;
+        if(s.idx > s.capa) {
+            s.capa += YAML.ALLOC_CT;
+            s.items = YAML.realloc(s.items, s.capa);
+        }
+        s.items[idx] = value;
     }
-    s->items[idx] = value;
-}
 
-long
-syck_seq_count( SyckNode *seq )
-{
-    ASSERT( seq != NULL );
-    ASSERT( seq->data.list != NULL );
-    return seq->data.list->idx;
-}
+    // syck_seq_count
+    public int seqCount() {
+        return ((Data.Seq)data).idx;
+    }
 
-void
-syck_seq_assign( SyckNode *seq, long idx, SYMID id )
-{
-    struct SyckSeq *s;
+    // syck_seq_assign
+    public void seqAssign(int idx, long id) {
+        ((Data.Seq)data).items[idx] = id;
+    }
 
-    ASSERT( map != NULL );
-    s = seq->data.list;
-    ASSERT( m != NULL );
-    s->items[idx] = id;
-}
-
-SYMID
-syck_seq_read( SyckNode *seq, long idx )
-{
-    struct SyckSeq *s;
-
-    ASSERT( seq != NULL );
-    s = seq->data.list;
-    ASSERT( s != NULL );
-    return s->items[idx];
-}
-
-     */
+    // syck_seq_read
+    public long seqRead(int idx) {
+        return ((Data.Seq)data).items[idx];
+    }
 }// Node
