@@ -127,49 +127,38 @@ public class Node {
         m.values[idx] = value;
     }
 
+    // syck_map_update
+    public void mapUpdate(Node map2) {
+        Data.Map m1 = (Data.Map)data;
+        Data.Map m2 = (Data.Map)map2.data;
 
+        if(m2.idx < 1) {
+            return;
+        }
+
+        int new_idx = m1.idx;
+        new_idx += m2.idx;
+        int new_capa = m1.capa;
+        while(new_idx > new_capa) {
+            new_capa += YAML.ALLOC_CT;
+        }
+        if(new_capa > m1.capa) {
+            m1.capa = new_capa;
+            m1.keys = YAML.realloc(m1.keys, m1.capa);
+            m1.values = YAML.realloc(m1.values, m1.capa);
+        }
+        for(new_idx = 0; new_idx < m2.idx; m1.idx++, new_idx++) {
+            m1.keys[m1.idx] = m2.keys[new_idx];
+            m1.values[m1.idx] = m2.values[new_idx];
+        }
+    }
+
+    // syck_map_count
+    public long mapCount() {
+        return ((Data.Map)data).idx;
+    }
 
     /*
-void
-syck_map_update( SyckNode *map1, SyckNode *map2 )
-{
-    struct SyckMap *m1, *m2;
-    long new_idx, new_capa;
-    ASSERT( map1 != NULL );
-    ASSERT( map2 != NULL );
-
-    m1 = map1->data.pairs;
-    m2 = map2->data.pairs;
-    if ( m2->idx < 1 ) return;
-        
-    new_idx = m1->idx;
-    new_idx += m2->idx;
-    new_capa = m1->capa;
-    while ( new_idx > new_capa )
-    {
-        new_capa += ALLOC_CT;
-    }
-    if ( new_capa > m1->capa )
-    {
-        m1->capa = new_capa;
-        S_REALLOC_N( m1->keys, SYMID, m1->capa );
-        S_REALLOC_N( m1->values, SYMID, m1->capa );
-    }
-    for ( new_idx = 0; new_idx < m2->idx; m1->idx++, new_idx++ )
-    {
-        m1->keys[m1->idx] = m2->keys[new_idx]; 
-        m1->values[m1->idx] = m2->values[new_idx]; 
-    }
-}
-
-long
-syck_map_count( SyckNode *map )
-{
-    ASSERT( map != NULL );
-    ASSERT( map->data.pairs != NULL );
-    return map->data.pairs->idx;
-}
-
 void
 syck_map_assign( SyckNode *map, enum map_part p, long idx, SYMID id )
 {
