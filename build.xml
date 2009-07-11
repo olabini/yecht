@@ -28,6 +28,12 @@
     <mkdir dir="${test.classes.dir}"/>
   </target>
 
+  <target name="jacc" depends="prepare" description="Standalone target that generates all our jacc based source files.">
+    <java jar="lib/jacc.jar" fork="true">
+      <arg line="${main.src.dir}/org/yecht/YAMLGrammar.jacc"/>
+    </java>
+  </target>
+
   <target name="ragel" depends="prepare" description="Standalone target that generates all our ragel based source files. Requires ragel and rlgen-java to be on the path">
     <exec executable="ragel" failonerror="true">
       <arg line="-J"/>

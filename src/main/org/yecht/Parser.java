@@ -25,7 +25,7 @@ public class Parser {
     int linect;
     int last_token;
     int force_token;
-    int eof;
+    boolean eof;
     JechtIO io;
     Map<String, Node> anchors, bad_anchors;
     Map syms;
@@ -74,7 +74,7 @@ public class Parser {
         root = 0;
         root_on_error = 0;
         linect = 0;
-        eof = 0;
+        eof = false;
         last_token = 0;
         force_token = 0;
     }
