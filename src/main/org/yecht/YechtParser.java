@@ -1,4 +1,4 @@
-// Output created by jacc on Sat Jul 11 10:11:38 CEST 2009
+// Output created by jacc on Mon Jul 13 12:00:30 CEST 2009
 
 package org.yecht;
 
@@ -16,7 +16,7 @@ class YechtParser implements YAMLGrammarTokens {
         yysp = 0;
         yyst = new int[yyss];
         yysv = new Object[yyss];
-        yytok = (lexer.getToken()
+        yytok = (lexer.currentToken()
                  );
     loop:
         for (;;) {
@@ -132,9 +132,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 11:
                     yyst[yysp] = 11;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -145,9 +145,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 12:
                     yyst[yysp] = 12;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -158,9 +158,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 13:
                     yyst[yysp] = 13;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -171,9 +171,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 14:
                     yyst[yysp] = 14;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -184,9 +184,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 15:
                     yyst[yysp] = 15;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -197,9 +197,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 16:
                     yyst[yysp] = 16;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -210,9 +210,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 17:
                     yyst[yysp] = 17;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -223,9 +223,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 18:
                     yyst[yysp] = 18;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -236,9 +236,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 19:
                     yyst[yysp] = 19;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -249,9 +249,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 20:
                     yyst[yysp] = 20;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -262,9 +262,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 21:
                     yyst[yysp] = 21;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -275,9 +275,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 22:
                     yyst[yysp] = 22;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -431,9 +431,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 32:
                     yyst[yysp] = 32;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -444,9 +444,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 33:
                     yyst[yysp] = 33;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -457,9 +457,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 34:
                     yyst[yysp] = 34;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -470,9 +470,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 35:
                     yyst[yysp] = 35;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -483,9 +483,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 36:
                     yyst[yysp] = 36;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -496,9 +496,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 37:
                     yyst[yysp] = 37;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -568,9 +568,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 44:
                     yyst[yysp] = 44;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -581,9 +581,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 45:
                     yyst[yysp] = 45;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -594,9 +594,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 46:
                     yyst[yysp] = 46;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -607,9 +607,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 47:
                     yyst[yysp] = 47;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -638,9 +638,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 50:
                     yyst[yysp] = 50;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -651,9 +651,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 51:
                     yyst[yysp] = 51;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -664,9 +664,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 52:
                     yyst[yysp] = 52;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -778,9 +778,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 61:
                     yyst[yysp] = 61;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -856,9 +856,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 66:
                     yyst[yysp] = 66;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -869,9 +869,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 67:
                     yyst[yysp] = 67;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -900,9 +900,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 70:
                     yyst[yysp] = 70;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -913,9 +913,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 71:
                     yyst[yysp] = 71;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -979,9 +979,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 76:
                     yyst[yysp] = 76;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1173,9 +1173,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 92:
                     yyst[yysp] = 92;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1186,9 +1186,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 93:
                     yyst[yysp] = 93;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1199,9 +1199,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 94:
                     yyst[yysp] = 94;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1239,9 +1239,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 98:
                     yyst[yysp] = 98;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1252,9 +1252,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 99:
                     yyst[yysp] = 99;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1265,9 +1265,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 100:
                     yyst[yysp] = 100;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1313,9 +1313,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 104:
                     yyst[yysp] = 104;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1326,9 +1326,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 105:
                     yyst[yysp] = 105;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1339,9 +1339,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 106:
                     yyst[yysp] = 106;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1352,9 +1352,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 107:
                     yyst[yysp] = 107;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -1365,9 +1365,9 @@ class YechtParser implements YAMLGrammarTokens {
 
                 case 108:
                     yyst[yysp] = 108;
-                    yysv[yysp] = (lexer.getSemantic()
+                    yysv[yysp] = (lexer.getLVal()
                                  );
-                    yytok = (lexer.nextToken()
+                    yytok = (lexer.yylex()
                             );
                     if (++yysp>=yyst.length) {
                         yyexpand();
@@ -4187,8 +4187,10 @@ class YechtParser implements YAMLGrammarTokens {
 
 
      private Parser parser;
-     public YechtParser(Parser parser) {
+     private Scanner lexer;
+     public YechtParser(Parser parser, Scanner lexer) {
        this.parser = parser;
+       this.lexer  = lexer;
      }
 
 public static Node NULL_NODE(Parser parser) {

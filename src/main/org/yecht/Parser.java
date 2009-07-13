@@ -21,7 +21,8 @@ public class Parser {
     ParserInput input_type;
     IOType io_type;
     int bufsize;
-    Pointer buffer, linectptr, lineptr, toktmp, token, cursor, marker, limit;
+    Pointer buffer, linectptr, lineptr, toktmp, cursor, marker, limit;
+    int token;
     int linect;
     int last_token;
     int force_token;
@@ -66,7 +67,7 @@ public class Parser {
         cursor = null;
         lineptr = null;
         linectptr = null;
-        token = null;
+        token = -1;
         toktmp = null;
         marker = null;
         limit = null;
@@ -200,18 +201,18 @@ public class Parser {
     // syck_move_tokens
     public int moveTokens() {
         int count;
-        if(token == null) {
+        if(token == -1) {
             return 0;
         }
 
-        int skip = limit.start - token.start;
+        int skip = limit.start - token;
         if(skip < 0) {
             return 0;
         }
 
-        if((count = token.start - buffer.start) != 0) {
-            System.arraycopy(token.buffer, token.start, buffer.buffer, buffer.start, skip);
-            token.start = buffer.start;
+        if((count = token - buffer.start) != 0) {
+            System.arraycopy(buffer.buffer, token, buffer.buffer, buffer.start, skip);
+            token = buffer.start;
             marker.start -= count;
             cursor.start -= count;
             toktmp.start -= count;

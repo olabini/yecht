@@ -16,6 +16,9 @@
 
 %package org.yecht
 %class YechtParser
+%next lexer.yylex()
+%get  lexer.currentToken()
+%semantic Object: lexer.getLVal()
 
 %%
 
@@ -425,8 +428,10 @@ inline_map_atom : atom
 %%
 
      private Parser parser;
-     public YechtParser(Parser parser) {
+     private Scanner lexer;
+     public YechtParser(Parser parser, Scanner lexer) {
        this.parser = parser;
+       this.lexer  = lexer;
      }
 
 public static Node NULL_NODE(Parser parser) {
