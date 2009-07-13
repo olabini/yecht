@@ -61,12 +61,37 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                return 0;
              }
            })
-         |  ("..." ENDSPC)
-         |  ("#")
-         |  NULL
+         |  ("..." ENDSPC %/{   
+                        Level lvl = parser.currentLevel();
+                        if(lvl.status == LevelStatus.header) {
+                          fgoto Header;
+                        } else {
+                          if(lvl.spaces > -1) {
+                            parser.popLevel();
+                            YYPOS(0);
+                            return YAML_IEND;
+                          }
+                          YYPOS(0);
+                          return 0; 
+                        }
+                    })
+         |  ("#" %/{
+           eatComments();
+           fgoto Header;
+         })
+         |  NULL %/{
+           Level lvl = parser.currentLevel();
+           if(lvl.spaces > -1) {
+              parser.popLevel();
+              YYPOS(0);
+              return YAML_IEND;
+           }
+           YYPOS(0);
+           return 0;
+         }
          |  YINDENT
          |  (SPCTAB+)
-         |  ANY  >EnterHeader)
+         |  ANY)  >EnterHeader
          ;
 
         Document :=
