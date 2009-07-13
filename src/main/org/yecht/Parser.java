@@ -21,8 +21,8 @@ public class Parser {
     ParserInput input_type;
     IOType io_type;
     int bufsize;
-    Pointer buffer, linectptr, lineptr, toktmp, cursor, marker, limit;
-    int token;
+    Pointer buffer;
+    int linectptr, lineptr, token, toktmp, cursor = -1, marker, limit;
     int linect;
     int last_token;
     int force_token;
@@ -64,13 +64,13 @@ public class Parser {
             buffer = Pointer.create(new byte[bufsize], 0);
         }
         buffer.buffer[buffer.start] = 0;
-        cursor = null;
-        lineptr = null;
-        linectptr = null;
+        cursor = -1;
+        lineptr = -1;
+        linectptr = -1;
         token = -1;
-        toktmp = null;
-        marker = null;
-        limit = null;
+        toktmp = -1;
+        marker = -1;
+        limit = -1;
 
         root = 0;
         root_on_error = 0;
@@ -205,7 +205,7 @@ public class Parser {
             return 0;
         }
 
-        int skip = limit.start - token;
+        int skip = limit - token;
         if(skip < 0) {
             return 0;
         }
@@ -213,25 +213,25 @@ public class Parser {
         if((count = token - buffer.start) != 0) {
             System.arraycopy(buffer.buffer, token, buffer.buffer, buffer.start, skip);
             token = buffer.start;
-            marker.start -= count;
-            cursor.start -= count;
-            toktmp.start -= count;
-            limit.start -= count;
-            lineptr.start -= count;
-            linectptr.start -= count;
+            marker -= count;
+            cursor -= count;
+            toktmp -= count;
+            limit -= count;
+            lineptr -= count;
+            linectptr -= count;
         }
         return skip;
     }
 
     // syck_check_limit
     public void checkLimit(int len) {
-        if(cursor == null) {
-            cursor = Pointer.create(buffer.buffer, buffer.start);
-            lineptr = Pointer.create(buffer.buffer, buffer.start);
-            linectptr = Pointer.create(buffer.buffer, buffer.start);
-            marker = Pointer.create(buffer.buffer, buffer.start);
+        if(cursor == -1) {
+            cursor = buffer.start;
+            lineptr = buffer.start;
+            linectptr = buffer.start;
+            marker = buffer.start;
         }
-        limit.start = buffer.start + len;
+        limit = buffer.start + len;
     }
 
     // syck_parser_read

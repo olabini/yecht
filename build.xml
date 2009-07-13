@@ -34,13 +34,14 @@
     </java>
   </target>
 
-  <target name="ragel" depends="prepare" description="Standalone target that generates all our ragel based source files. Requires ragel and rlgen-java to be on the path">
-    <exec executable="ragel" failonerror="true">
-      <arg line="-J"/>
+  <target name="re2j" depends="prepare" description="Standalone target that generates all our re2j based source files. Requires re2j to be on the path">
+    <exec executable="re2j" failonerror="true">
       <arg line="-o ${main.src.dir}/org/yecht/TokenScanner.java"/>
-      <arg line="${main.src.dir}/org/yecht/TokenScanner.rl"/>
+      <arg line="${main.src.dir}/org/yecht/TokenScanner.re"/>
     </exec>
+  </target>
 
+  <target name="ragel" depends="prepare" description="Standalone target that generates all our ragel based source files. Requires ragel and rlgen-java to be on the path">
     <exec executable="ragel" failonerror="true">
       <arg line="-J"/>
       <arg line="-o ${main.src.dir}/org/yecht/BytecodeScanner.java"/>

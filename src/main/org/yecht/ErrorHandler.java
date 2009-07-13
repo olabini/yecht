@@ -13,7 +13,7 @@ public interface ErrorHandler {
     public static class Default implements ErrorHandler {
         // syck_default_error_handler
         public void handle(Parser p, String msg) {
-            System.err.println("Error at [Line " + p.linect + ", Col " + (p.cursor.start - p.lineptr.start) + "]: " + msg);
+            System.err.println("Error at [Line " + p.linect + ", Col " + (p.cursor - p.lineptr) + "]: " + msg);
         }
     }
 }// ErrorHandler
