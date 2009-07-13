@@ -1,5 +1,7 @@
 package org.yecht;
 
+import java.io.IOException;
+
 // Equivalent to token.re
 public class TokenScanner implements YAMLGrammarTokens, Scanner {
    private Parser parser;
@@ -48,7 +50,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      }
    }
 
-   private int real_yylex() throws java.io.IOException {
+   private int real_yylex() throws IOException {
      int doc_level = 0;
      if(parser.cursor == -1) {
        parser.read();
@@ -66,6 +68,8 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
         re2j:define:YYMARKER  = "parser.marker";
         re2j:define:YYLIMIT  = "parser.limit";
         re2j:define:YYDATA  = "parser.buffer.buffer";
+        re2j:yyfill:parameter  = 0;
+        re2j:define:YYFILL  = "parser.read()";
 
 YWORDC = [A-Za-z0-9_-] ;
 YWORDP = [A-Za-z0-9_-\.] ;
@@ -90,9 +94,10 @@ HEX = [0-9A-Fa-f] ;
 ESCSEQ = ["\\abefnrtv0] ;
 
 */
+        return 0;
    }
 
-   private void eatComments() {
+   private void eatComments() throws IOException {
      comment: while(true) {
        parser.token = parser.cursor;
 /*!re2j
