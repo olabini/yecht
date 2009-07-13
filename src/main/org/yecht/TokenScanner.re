@@ -50,6 +50,22 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      }
    }
 
+
+   private final static int Header = 1;
+   private final static int Document = 2;
+   private final static int Directive = 3;
+   private final static int Plain = 4;
+   private final static int Plain2 = 5;
+   private final static int Plain3 = 6;
+   private final static int SingleQuote = 7;
+   private final static int SingleQuote2 = 8;
+   private final static int DoubleQuote = 9;
+   private final static int DoubleQuote2 = 10;
+   private final static int TransferMethod = 11;
+   private final static int TransferMethod2 = 12;
+   private final static int ScalarBlock = 13;
+   private final static int ScalarBlock2 = 14;
+
    private int real_yylex() throws IOException {
      int doc_level = 0;
      if(parser.cursor == -1) {
@@ -94,7 +110,28 @@ HEX = [0-9A-Fa-f] ;
 ESCSEQ = ["\\abefnrtv0] ;
 
 */
-        return 0;
+        int mainLoopGoto = Header;
+        do {
+            gotoSomething: while(true) {
+                switch(mainLoopGoto) {
+                case Header:
+                case Document:
+                case Directive:
+                case Plain:
+                case Plain2:
+                case Plain3:
+                case SingleQuote:
+                case SingleQuote2:
+                case DoubleQuote:
+                case DoubleQuote2:
+                case TransferMethod:
+                case TransferMethod2:
+                case ScalarBlock:
+                case ScalarBlock2:
+                }
+                return 0;                
+            }
+        } while(true);
    }
 
    private void eatComments() throws IOException {
