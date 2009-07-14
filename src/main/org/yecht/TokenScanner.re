@@ -151,7 +151,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      QuotedString q = null;
      Level plvl = null;
      int parentIndent = -1;
-
+     int keep_nl = -1;
 
      int doc_level = 0;
      if(parser.cursor == -1) {
@@ -735,15 +735,183 @@ ANY                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
 */
 }                    
                 case DoubleQuote:
-                case DoubleQuote2:
+                   keep_nl = 1;
+                   q = new QuotedString();
+                case DoubleQuote2: {
+                   parser.token = parser.cursor;
+/*!re2j
+
+YINDENT             {
+                        // GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN )
+                        int indent = parser.token;
+                        NEWLINE(indent);
+                        while(indent < parser.cursor) {
+                          if(parser.buffer.buffer[indent] == '\t') {
+                            error("TAB found in your indentation, please remove",parser);
+                          } else if(isNewline(++indent) != 0) {
+                            NEWLINE(indent);
+                          }
+                        }
+                        int indt_len = 0;
+                        if(parser.buffer.buffer[parser.cursor] == 0) {
+                          indt_len = -1;
+                          parser.token = parser.cursor-1;
+                        } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
+                          indt_len = parser.cursor - parser.lineptr;
+                        }
+
+                        int nl_count = 0;
+                        Level lvl = parser.currentLevel();
+                        if(lvl.status != LevelStatus.str) {
+                            parser.addLevel(indt_len, LevelStatus.str);
+                        } else if(indt_len < lvl.spaces) {
+                            // Error!
+                        }
+
+                        if(keep_nl == 1) {
+                            while(parser.token < parser.cursor) {
+                                int nl_len = newlineLen(parser.token++);
+                                if(nl_len > 0) {
+                                    nl_count++;
+                                    parser.token += (nl_len - 1);
+                                }
+                            }
+                            if(nl_count <= 1) {
+                                q.cat(' ');
+                            } else {
+                                for(int i = 0; i < nl_count - 1; i++) {
+                                    q.cat('\n');
+                                }
+                            }
+                        }
+
+                        keep_nl = 1;
+                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                    }
+
+"\\" ESCSEQ         {   
+                        byte ch = parser.buffer.buffer[parser.cursor-1];
+                        q.cat(escapeSeq(ch));
+                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                    }
+
+"\\x" HEX HEX       {    
+                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.token+2, 2, "ISO-8859-1"), 16).intValue());
+                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                    }
+
+"\\" SPC* LF        {   keep_nl = 0;
+                        parser.cursor--;
+                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                    }
+
+( "\"" | NULL )     {   
+                        Node n = Node.allocStr();
+                        Level lvl = parser.currentLevel();
+
+                        if(lvl.status == LevelStatus.str) {
+                            parser.popLevel();
+                        }
+
+                        if(parser.taguri_expansion) {
+                            n.type_id = Parser.taguri(YAML.DOMAIN, "str");
+                        } else {
+                            n.type_id = "str";
+                        }
+                        Data.Str dd = (Data.Str)n.data;
+                        dd.ptr = Pointer.create(q.str, 0);
+                        dd.len = q.idx;
+                        dd.style = ScalarStyle.TwoQuote;
+                        lval = n;
+                        return YAML_PLAIN;
+                    }
+
+ANY                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
+                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                    }
+
+*/
+}                
                 case TransferMethod:
-                case TransferMethod2:
+                    q = new QuotedString();
+                case TransferMethod2: {
+                    parser.toktmp = parser.cursor;
+/*!re2j
+
+( ENDSPC | NULL )   {   
+                        parser.cursor = parser.toktmp;
+                        if(parser.cursor == parser.token + 1) {
+                            return YAML_ITRANSFER;
+                        }
+
+                        Level lvl = parser.currentLevel();
+
+                        /*
+                         * URL Prefixing
+                         */
+                        if(q.str[0] == '^') {
+                            lval = lvl.domain + new String(q.str, 1, q.idx - 1, "ISO-8859-1");
+                        } else {
+                            int carat = 0;
+                            int qend = q.idx;
+                            while((++carat) < qend) {
+                              if(q.str[carat] == '^') {
+                                break;
+                              }
+                            }
+
+                            if(carat < qend) {
+                                lvl.domain = new String(q.str, 0, carat, "ISO-8859-1");
+                                lval = lvl.domain + new String(q.str, carat + 1, (qend - carat) - 1, "ISO-8859-1");
+                            } else {
+                                lval = new String(q.str, 0, qend, "ISO-8859-1");
+                            }
+                        }
+
+                        return YAML_TRANSFER; 
+                    }
+
+/*
+ * URL Escapes
+ */
+"\\" ESCSEQ          {  
+                        byte ch = parser.buffer.buffer[parser.cursor-1];
+                        q.cat(escapeSeq(ch));
+                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                    }
+
+"\\x" HEX HEX       {   
+                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.token+2, 2, "ISO-8859-1"), 16).intValue());
+                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                    }
+
+ANY                 {   
+                        q.cat(parser.buffer.buffer[parser.cursor-1]);
+                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                    }
+*/
+}
                 case ScalarBlock:
                 case ScalarBlock2:
                 }
                 return 0;                
             }
         } while(true);
+   }
+
+   private byte escapeSeq(byte ch) {
+       switch(ch) {
+        case '0': return '\0';
+        case 'a': return 7;
+        case 'b': return '\010';
+        case 'e': return '\033';
+        case 'f': return '\014';
+        case 'n': return '\n';
+        case 'r': return '\015';
+        case 't': return '\t';
+        case 'v': return '\013';
+        default: return ch;
+      }
    }
 
    private void eatComments() throws IOException {
