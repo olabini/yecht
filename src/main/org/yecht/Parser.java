@@ -279,9 +279,12 @@ public class Parser {
     // syck_parse
     public long parse() {
         resetLevels();
-        // TODO: add real parse call here
-        //        yechtparse();
+        yechtparse();
         return root;
+    }
+
+    private void yechtparse() {
+        new YechtParser(this, TokenScanner.createScanner(this)).parse();
     }
 
     // syck_hdlr_add_node
