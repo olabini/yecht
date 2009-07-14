@@ -309,8 +309,32 @@ NULL    {   if(lvl.spaces > -1) {
 
 */
                }
-               case Directive:
-               case Comment:
+               case Directive: {
+                   parser.token = parser.cursor;
+
+/*!re2j
+
+DIR        {   CHK_NL(parser.cursor);
+               mainLoopGoto = Directive; break gotoSomething;
+           }
+
+ANY        {   parser.cursor = parser.token;
+               return YAML_DOCSEP;
+           }
+*/
+}
+               case Comment: {
+                   parser.token = parser.cursor;
+
+/*!re2j
+
+LF          {   CHK_NL(parser.cursor);
+               mainLoopGoto = Document; break gotoSomething; }
+
+ANY         {   mainLoopGoto = Comment; break gotoSomething; }
+
+*/
+}
                case Scalar:
                case Scalar2:
                case ScalarEnd:
