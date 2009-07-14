@@ -65,7 +65,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      return 0;
    }
 
-
    private int isNewline(byte[] buff, int ptr) {
      return newlineLen(buff, ptr);
    }

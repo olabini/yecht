@@ -1,12 +1,8 @@
-implicit.re
-  -rw-r--r--   1 olabini  olabini  12259 Jul  9 15:36 bytecode.re
-  -rw-r--r--   1 olabini  olabini  34401 Jul  9 15:36 token.re
+bytecode.re
 
+yaml2byte.c
+emitter.c
 
-  -rw-r--r--   1 olabini  olabini   7522 Jul  9 15:36 yaml2byte.c
-  -rw-r--r--   1 olabini  olabini  36365 Jul  9 15:36 emitter.c
-
-
-  -rw-r--r--   1 olabini  olabini     73 Jul  9 15:36 sycklex.h
-  -rw-r--r--   1 olabini  olabini   6704 Jul  9 15:36 yamlbyte.h
-  -rw-r--r--   1 olabini  olabini  12671 Jul  9 15:36 syck.h
+sycklex.h
+yamlbyte.h
+syck.h
