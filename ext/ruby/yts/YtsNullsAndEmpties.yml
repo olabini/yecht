@@ -1,0 +1,118 @@
+--- %YAML:1.0 
+test: Empty Sequence 
+brief: > 
+    You can represent the empty sequence 
+    with an empty inline sequence. 
+yaml: | 
+    empty: [] 
+python: | 
+    [ 
+        { 'empty': [] } 
+    ] 
+ruby: | 
+    { 'empty' => [] } 
+syck: |
+    struct test_node seq[] = {
+        end_node
+    };
+    struct test_node map[] = {
+        { T_STR, 0, "empty" },
+            { T_SEQ, 0, 0, seq },
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map },
+        end_node
+    };
+ 
+--- 
+test: Empty Mapping 
+brief: > 
+    You can represent the empty mapping 
+    with an empty inline mapping. 
+yaml: | 
+    empty: {} 
+python: | 
+    [ 
+        { 'empty': {} } 
+    ] 
+ruby: | 
+    { 'empty' => {} } 
+syck: |
+    struct test_node map2[] = {
+        end_node
+    };
+    struct test_node map1[] = {
+        { T_STR, 0, "empty" },
+            { T_MAP, 0, 0, map2 },
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map1 },
+        end_node
+    };
+ 
+--- 
+test: Empty Sequence as Entire Document 
+yaml: | 
+    --- [] 
+python: | 
+    [ [] ] 
+ruby: | 
+    [] 
+syck: |
+    struct test_node seq[] = {
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_SEQ, 0, 0, seq },
+        end_node
+    };
+ 
+--- 
+test: Empty Mapping as Entire Document 
+yaml: | 
+    --- {} 
+python: | 
+    [ {} ] 
+ruby: | 
+    {} 
+syck: |
+    struct test_node map[] = {
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map },
+        end_node
+    };
+ 
+---  
+test: Null as Document 
+yaml: | 
+    --- ~ 
+python: | 
+    [ None ] 
+ruby: | 
+    nil 
+syck: |
+    struct test_node stream[] = {
+        { T_STR, 0, "~" },
+        end_node
+    };
+ 
+--- 
+test: Empty String 
+brief: > 
+    You can represent an empty string 
+    with a pair of quotes. 
+yaml: | 
+    --- '' 
+python: | 
+    [ '' ] 
+ruby: | 
+    '' 
+syck: |
+    struct test_node stream[] = {
+        { T_STR, 0, "" },
+        end_node
+    };
