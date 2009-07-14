@@ -8,7 +8,7 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public class Node {
-    long id = -1;
+    long id = 0;
     KindTag kind;
     String type_id;
     String anchor;

@@ -59,7 +59,7 @@ public class Bytestring {
             this.buffer = YAML.realloc(this.buffer, length+1);
         }
 
-        int curr = length - remaining;
+        int curr = this.length - this.remaining;
         this.buffer[curr] = code;
         curr++;
         if(inbuf != null) {
@@ -70,7 +70,7 @@ public class Bytestring {
         buffer[curr] = '\n';
         curr++;
         buffer[curr] = 0;
-        remaining -= length;
+        this.remaining -= length;
     }
 
     // bytestring_extend
@@ -84,10 +84,10 @@ public class Bytestring {
         } else {
             ext.printed = true;
             int length = ext.length - ext.remaining;
-            if(length > remaining) {
-                int grow = (length - remaining) + CHUNKSIZE;
-                remaining += grow;
-                length += grow;
+            if(length > this.remaining) {
+                int grow = (length - this.remaining) + CHUNKSIZE;
+                this.remaining += grow;
+                this.length += grow;
                 this.buffer = YAML.realloc(this.buffer, length+1);
             }
 

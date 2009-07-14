@@ -83,12 +83,16 @@ public class YAML {
     // syck_yaml2byte
     public static byte[] yaml2byte(byte[] yamlstr) {
         Parser parser = Parser.newParser();
-        parser.str(Pointer.create(yamlstr, 0), null);
+        byte[] xx = new byte[yamlstr.length+1];
+        System.arraycopy(yamlstr, 0, xx, 0, yamlstr.length);
+        xx[xx.length-1] = 0;
+        parser.str(Pointer.create(xx, 0), null);
         parser.handler(new BytecodeNodeHandler());
         parser.errorHandler(null);
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
         long oid = parser.parse();
+        System.err.println("got oid: " + oid);
         Bytestring sav = (Bytestring)parser.lookupSym(oid);
         if(null == sav) {
             return null;
