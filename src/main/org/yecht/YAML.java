@@ -79,4 +79,33 @@ public class YAML {
         System.arraycopy(input, 0, newArray, 0, input.length);
         return newArray;
     }
+
+    // syck_yaml2byte
+    public static byte[] yaml2byte(byte[] yamlstr) {
+        Parser parser = Parser.newParser();
+        parser.str(Pointer.create(yamlstr, 0), null);
+        parser.handler(new BytecodeNodeHandler());
+        parser.errorHandler(null);
+        parser.implicitTyping(true);
+        parser.taguriExpansion(true);
+        long oid = parser.parse();
+        Bytestring sav = (Bytestring)parser.lookupSym(oid);
+        if(null == sav) {
+            return null;
+        } else {
+            byte[] ret = new byte[Bytestring.strlen(sav.buffer) + 2];
+            ret[0] = 'D';
+            ret[1] = '\n';
+            System.arraycopy(sav.buffer, 0, ret, 2, ret.length-2);
+            return ret;
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        byte[] yaml = "test: 1\nand: \"with new\\nline\\n\"\nalso: &3 three\nmore: *3".getBytes("ISO-8859-1");
+        System.out.println("--- # YAML ");
+        System.out.print(new String(yaml, "ISO-8859-1"));
+        System.out.print("\n...\n");
+        System.out.print(new String(yaml2byte(yaml), "ISO-8859-1"));
+    }
 }

@@ -17,7 +17,7 @@ public class Parser {
     boolean implicit_typing, taguri_expansion;
     NodeHandler handler;
     ErrorHandler error_handler;
-    BadAnchorHandler bad_anchor_handler;
+    BadAnchorHandler bad_anchor_handler = new BadAnchorHandler.Default();
     ParserInput input_type;
     IOType io_type;
     int bufsize;
@@ -29,7 +29,7 @@ public class Parser {
     boolean eof;
     JechtIO io;
     Map<String, Node> anchors, bad_anchors;
-    Map syms;
+    Map<Integer, Object> syms;
     Level[] levels;
     int lvl_idx;
     int lvl_capa;
@@ -43,6 +43,7 @@ public class Parser {
 
         if(lvl_idx < 1) {
             lvl_idx = 1;
+            levels[0] = new Level();
             levels[0].spaces = -1;
             levels[0].ncount = 0;
             levels[0].domain = "";
@@ -93,7 +94,7 @@ public class Parser {
         p.input_type = ParserInput.YAML_UTF8;
         p.io_type = IOType.Str;
         p.io = null;
-        p.syms = null;
+        p.syms = new HashMap<Integer, Object>();
         p.anchors = null;
         p.bad_anchors = null;
         p.implicit_typing = true;
@@ -107,14 +108,14 @@ public class Parser {
 
     // syck_add_sym
     public int addSym(Object data) {
-        // TODO: implement when I know how the symbols are actually used
-        return -1;
+        int id = syms.size() + 1;
+        syms.put(Integer.valueOf(id), data);
+        return id;
     }
 
     // syck_lookup_sym
     public Object lookupSym(long id) {
-        // TODO: implement when I know how the symbols are actually used
-        return null;
+        return syms.get(Integer.valueOf((int)id));
     }
 
     // syck_parser_handler

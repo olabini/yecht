@@ -15,6 +15,19 @@ public class Node {
     Data data;
     Object shortcut;
     
+    public String toString() {
+        switch(kind) {
+        case Str:
+            return "Str[id=" + id +", type=" + type_id +", val="+data+"]";
+        case Seq:
+            return "Seq[id=" + id +", type=" + type_id +", val="+data+"]";
+        case Map:
+            return "Map[id=" + id +", type=" + type_id +", val="+data+"]";
+        }
+        return "other";
+    }
+
+
     // syck_alloc_map
     public static Node allocMap() {
         Data.Map m = new Data.Map();

@@ -18,7 +18,11 @@ public class Bytestring {
     public final static int HASH = 0xCAFECAFE;
     public final static int CHUNKSIZE = 64;
 
-    private static int strlen(byte[] buf, int start) {
+    public static int strlen(byte[] buf) {
+        return strlen(buf, 0);
+    }
+
+    public static int strlen(byte[] buf, int start) {
         int stop = buf.length;
         for(int ix = start; ix < stop; ix++) {
             if(buf[ix] == 0) {

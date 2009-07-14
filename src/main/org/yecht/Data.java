@@ -14,6 +14,10 @@ public abstract class Data {
         long[] values;
         int capa;
         int idx;
+
+        public String toString() {
+            return "{}";
+        }
     }
 
     public static class Seq extends Data {
@@ -21,11 +25,19 @@ public abstract class Data {
         long[] items;
         int capa;
         int idx;
+
+        public String toString() {
+            return "[]";
+        }
     }
 
     public static class Str extends Data {
         ScalarStyle style;
         Pointer ptr;
         int len;
+
+        public String toString() {
+            return "\"" + new String(ptr.buffer, ptr.start, len) + "\"";
+        }
     }
 }// Data

@@ -11,6 +11,11 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    private int currentToken = -1;
 
    public static void error(String msg, Parser parser) {
+       if(parser.error_handler == null) {
+           parser.error_handler = new ErrorHandler.Default();
+       }
+       parser.root = parser.root_on_error;
+       parser.error_handler.handle(parser, msg);
    }
 
    public static Scanner createScanner(Parser parser) {
@@ -34,15 +39,19 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    public Object getLVal() {
+     System.err.println("TokenScanner.getLVal: " + lval);
      return lval;
    }
 
    public int currentToken() {
+     if(currentToken == -1)
+         return yylex();
      return currentToken;
    }
 
    public int yylex() {
      try {
+          System.err.println("TokenScanner.yylex");
           currentToken = real_yylex();
           return currentToken;
      } catch(java.io.IOException ioe) {
@@ -144,6 +153,8 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    private final static int TransferMethod2 = 12;
    private final static int ScalarBlock = 13;
    private final static int ScalarBlock2 = 14;
+
+   private final static String[] names = {"", "Header", "Document", "Directive", "Plain", "Plain2", "Plain3", "SingleQuote", "SingleQuote2", "DoubleQuote", "DoubleQuote2", "TransferMethod", "TransferMethod2", "ScalarBlock", "ScalarBlock2"};
 
    private void YYPOS(int n) {
        parser.cursor = parser.token + n;
