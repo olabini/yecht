@@ -18,6 +18,7 @@ public interface IoFileRead {
             max_size -= skip;
             int len = file.ptr.read(buf.buffer, buf.start + skip, max_size);
             len += skip;
+            buf.buffer[buf.start + len] = 0;
             return len;
         }
     }

@@ -38,6 +38,7 @@ public interface IoStrRead {
                 System.arraycopy(str.ptr.buffer, beg, buf.buffer, buf.start + skip, len);
             }
             len += skip;
+            buf.buffer[buf.start+len] = 0;
             return len;
         }
     }

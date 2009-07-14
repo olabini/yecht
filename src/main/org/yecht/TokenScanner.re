@@ -39,7 +39,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    public Object getLVal() {
-     System.err.println("TokenScanner.getLVal: " + lval);
      return lval;
    }
 
@@ -51,7 +50,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
 
    public int yylex() {
      try {
-          System.err.println("TokenScanner.yylex");
           currentToken = real_yylex();
           return currentToken;
      } catch(java.io.IOException ioe) {

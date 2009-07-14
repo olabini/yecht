@@ -109,7 +109,6 @@ public class Parser {
     // syck_add_sym
     public int addSym(Object data) {
         int id = syms.size() + 1;
-        System.err.println("addSym() -> " + id);
         syms.put(Integer.valueOf(id), data);
         return id;
     }
@@ -296,7 +295,6 @@ public class Parser {
             n.id = handler.handle(this, n);
         }
         id = n.id;
-        System.err.println("addNode() -> " + id);
         return id;
     }
 

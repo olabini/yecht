@@ -54,9 +54,9 @@ public class Bytestring {
         
         if(length > remaining) {
             int grow = (length - remaining) + CHUNKSIZE;
-            remaining += grow;
-            length += grow;
-            this.buffer = YAML.realloc(this.buffer, length+1);
+            this.remaining += grow;
+            this.length += grow;
+            this.buffer = YAML.realloc(this.buffer, this.length+1);
         }
 
         int curr = this.length - this.remaining;
@@ -88,7 +88,7 @@ public class Bytestring {
                 int grow = (length - this.remaining) + CHUNKSIZE;
                 this.remaining += grow;
                 this.length += grow;
-                this.buffer = YAML.realloc(this.buffer, length+1);
+                this.buffer = YAML.realloc(this.buffer, this.length+1);
             }
 
             int curr = this.length - this.remaining;
