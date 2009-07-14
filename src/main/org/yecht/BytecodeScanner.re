@@ -75,9 +75,35 @@ public class BytecodeScanner implements YAMLGrammarTokens, Scanner {
    private final static int Scalar2 = 6;
    private final static int ScalarEnd = 7;
 
+   private static class QuotedString {
+       public int idx = 0;
+       public int capa = 100;
+       public byte[] str;
+
+       public QuotedString() {
+           str = new byte[100];
+       }
+
+       public void cat(char l) {
+           cat((byte)l);
+       }
+      
+       public void cat(byte l) {
+           if(idx + 1 >= capa) {
+               capa += QUOTELEN;
+               str = YAML.realloc(str, capa);
+           }
+           str[idx++] = l;
+           str[idx] = 0;
+       }
+   }
+
    // sycklex_bytecode_utf8
    private int real_yylex() throws IOException {
        Level lvl = null;
+       QuotedString q = null;
+       int tok = -1;
+
        if(parser.cursor == -1) {
            parser.read();
        }
@@ -329,15 +355,66 @@ ANY        {   parser.cursor = parser.token;
 /*!re2j
 
 LF          {   CHK_NL(parser.cursor);
-               mainLoopGoto = Document; break gotoSomething; }
+                mainLoopGoto = Document; break gotoSomething; }
 
 ANY         {   mainLoopGoto = Comment; break gotoSomething; }
 
 */
 }
                case Scalar:
-               case Scalar2:
-               case ScalarEnd:
+                   q = new QuotedString();
+                   q.str[0] = 0;
+               case Scalar2: {
+                   tok = parser.cursor;
+
+/*!re2j
+LF SCC  {   CHK_NL(tok+1);
+            mainLoopGoto = Scalar2; break gotoSomething; }
+
+LF NNL  {   CHK_NL(tok+1);
+            if(tok + 2 < parser.cursor) {
+                int count = tok + 2;
+                int total = Integer.valueOf(new String(parser.buffer.buffer, tok + 2, parser.cursor - (tok + 2)), 10).intValue();
+                for(int i=0; i<total; i++) {
+                    q.cat('\n');
+                }
+            } else {
+                q.cat('\n');
+            }
+            mainLoopGoto = Scalar2; break gotoSomething;
+        }
+
+LF NLZ  {   CHK_NL(tok+1);
+            q.cat((byte)0);
+            mainLoopGoto = Scalar2; break gotoSomething;
+        }
+
+LF      {   parser.cursor = tok;
+            mainLoopGoto = ScalarEnd; break gotoSomething;
+        }
+
+NULL    {   parser.cursor = tok;
+            mainLoopGoto = ScalarEnd; break gotoSomething;
+        }
+
+ANY     {   q.cat(parser.buffer.buffer[tok]);
+            mainLoopGoto = Scalar2; break gotoSomething;
+        }
+
+*/
+}
+               case ScalarEnd: {
+                   Node n = Node.allocStr();
+                   Data.Str dd = (Data.Str)n.data;
+                   dd.ptr = Pointer.create(q.str, 0);
+                   dd.len = q.idx;
+                   lval = n;
+                   parser.popLevel();
+                   if(parser.implicit_typing) {
+                       ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
+                   }          
+                   return YAML_PLAIN;
+               }
                }
            }
        } while(true);
