@@ -1,8 +1,10 @@
-bytecode.re
-
 yaml2byte.c
-emitter.c
 
-sycklex.h
-yamlbyte.h
-syck.h
+???? yamlbyte.h
+
+
+
+
+
+emitter.c  (emitter parts)
+syck.h  (emitter parts
