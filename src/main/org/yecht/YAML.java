@@ -8,6 +8,12 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public class YAML {
+    public final static int BLOCK_FOLD = 10;
+    public final static int BLOCK_LIT = 20;
+    public final static int BLOCK_PLAIN = 30;
+    public final static int NL_CHOMP = 40;
+    public final static int NL_KEEP = 50;
+
     public final static int YAML_MAJOR = 1;
     public final static int YAML_MINOR = 0;
 

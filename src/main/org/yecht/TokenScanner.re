@@ -65,6 +65,21 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      return 0;
    }
 
+
+   private int isNewline(byte[] buff, int ptr) {
+     return newlineLen(buff, ptr);
+   }
+
+   private int newlineLen(byte[] buff, int ptr) {
+     if(buff[ptr] == '\n')
+       return 1;
+
+     if(buff[ptr] == '\r' && buff[ptr+1] == '\n')
+       return 2;
+       
+     return 0;
+   }
+
    private void NEWLINE(int ptr) {
      parser.lineptr = ptr + newlineLen(ptr);
      if(parser.lineptr > parser.linectptr) {
@@ -73,6 +88,50 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      }
    }
 
+   private void RETURN_YAML_BLOCK(QuotedString q, int blockType, int nlDoWhat) {
+       Node n = Node.allocStr();
+       if(parser.taguri_expansion) {
+           n.type_id = Parser.taguri(YAML.DOMAIN, "str");
+       } else {
+           n.type_id = "str";
+       }
+
+       Data.Str dd = (Data.Str)n.data;
+       dd.ptr = Pointer.create(q.str, 0);
+       dd.len = q.idx;
+       if(blockType == YAML.BLOCK_LIT) {
+           dd.style = ScalarStyle.Literal;
+       } else {
+           dd.style = ScalarStyle.Fold;
+       }
+       if(q.idx > 0) {
+           if(nlDoWhat != YAML.NL_KEEP) {
+               int fc = dd.len - 1;
+               while(isNewline(dd.ptr.buffer, fc) > 0) {
+                   fc--;
+               }
+               if(nlDoWhat != YAML.NL_CHOMP && fc < (dd.len-1)) {
+                   fc += 1;
+               }
+               dd.len = fc + 1;
+           }
+       }
+       lval = n;
+   }
+
+   private int GET_TRUE_YAML_INDENT() {
+       Level lvl_deep = parser.currentLevel();
+       int indt_len = lvl_deep.spaces;
+       if(lvl_deep.status == LevelStatus.seq || (indt_len == parser.cursor - parser.lineptr && lvl_deep.status != LevelStatus.map)) {
+            parser.lvl_idx--;
+            Level lvl_over = parser.currentLevel();
+            indt_len = lvl_over.spaces;
+            parser.lvl_idx++;
+        }
+
+        return indt_len;       
+   }
+   
    private final static int Header = 1;
    private final static int Document = 2;
    private final static int Directive = 3;
@@ -152,6 +211,12 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      Level plvl = null;
      int parentIndent = -1;
      int keep_nl = -1;
+     int blockType = 0;
+     int nlDoWhat = 0;
+     int lastIndent = 0;
+     int forceIndent = -1;
+     int yyt = -1;
+     Level lvl = null;
 
      int doc_level = 0;
      if(parser.cursor == -1) {
@@ -208,7 +273,7 @@ ESCSEQ = ["\\abefnrtv0] ;
                     parser.token = parser.cursor;
 /*!re2j
 
-"---" ENDSPC        { Level lvl = parser.currentLevel();
+"---" ENDSPC        { lvl = parser.currentLevel();
                       if(lvl.status == LevelStatus.header) {
                           YYPOS(3);
                           mainLoopGoto = Directive; break gotoSomething;
@@ -223,7 +288,7 @@ ESCSEQ = ["\\abefnrtv0] ;
                       }
                     }
 
-"..." ENDSPC        {   Level lvl = parser.currentLevel();
+"..." ENDSPC        {   lvl = parser.currentLevel();
                         if(lvl.status == LevelStatus.header) {
                           mainLoopGoto = Header; break gotoSomething;
                         } else {
@@ -241,7 +306,7 @@ ESCSEQ = ["\\abefnrtv0] ;
                         mainLoopGoto = Header; break gotoSomething;
                     }
 
-NULL                {   Level lvl = parser.currentLevel();
+NULL                {   lvl = parser.currentLevel();
                         if(lvl.spaces > -1) {
                             parser.popLevel();
                             YYPOS(0);
@@ -282,7 +347,7 @@ ANY                 {   YYPOS(0);
 */
                 }
                 case Document: {
-                    Level lvl = parser.currentLevel();
+                    lvl = parser.currentLevel();
                     if(lvl.status == LevelStatus.header) {
                       lvl.status = LevelStatus.doc;
                     }
@@ -551,7 +616,7 @@ YINDENT             {
                           indt_len = parser.cursor - parser.lineptr;
                         }
                         
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
 
                         if(indt_len <= parentIndent) {
                             RETURN_IMPLICIT(q);
@@ -680,7 +745,7 @@ YINDENT             {
                         }
 
                         int nl_count = 0;
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
                         if(lvl.status != LevelStatus.str) {
                             parser.addLevel(indt_len, LevelStatus.str);
                         } else if(indt_len < lvl.spaces) {
@@ -711,7 +776,7 @@ YINDENT             {
 
 ( "'" | NULL )      {   
                         Node n = Node.allocStr();
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
                         if(lvl.status == LevelStatus.str) {
                             parser.popLevel();
                         }
@@ -761,7 +826,7 @@ YINDENT             {
                         }
 
                         int nl_count = 0;
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
                         if(lvl.status != LevelStatus.str) {
                             parser.addLevel(indt_len, LevelStatus.str);
                         } else if(indt_len < lvl.spaces) {
@@ -807,7 +872,7 @@ YINDENT             {
 
 ( "\"" | NULL )     {   
                         Node n = Node.allocStr();
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
 
                         if(lvl.status == LevelStatus.str) {
                             parser.popLevel();
@@ -844,7 +909,7 @@ ANY                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
                             return YAML_ITRANSFER;
                         }
 
-                        Level lvl = parser.currentLevel();
+                        lvl = parser.currentLevel();
 
                         /*
                          * URL Prefixing
@@ -892,7 +957,158 @@ ANY                 {
 */
 }
                 case ScalarBlock:
-                case ScalarBlock2:
+                    q = new QuotedString();
+                    blockType = 0;
+                    nlDoWhat = 0;
+                    lastIndent = 0;
+                    forceIndent = -1;
+                    yyt = parser.token;
+                    lvl = parser.currentLevel();
+                    parentIndent = -1;
+                    switch(parser.buffer.buffer[yyt]) {
+                        case '|': blockType = YAML.BLOCK_LIT; break;
+                        case '>': blockType = YAML.BLOCK_FOLD; break;
+                    }
+
+                    while( ++yyt <= parser.cursor ) {
+                        if(parser.buffer.buffer[yyt] == '-') {
+                           nlDoWhat = YAML.NL_CHOMP;
+                        } else if(parser.buffer.buffer[yyt] == '+' ) {
+                           nlDoWhat = YAML.NL_KEEP;
+                        } else if(Character.isDigit((char)parser.buffer.buffer[yyt])) {
+                           forceIndent = '0' - (char)parser.buffer.buffer[yyt];
+                        }
+                     }
+
+                     q.str[0] = 0;
+                     parser.token = parser.cursor;
+
+                case ScalarBlock2: {
+                     parser.token = parser.cursor;
+/*!re2j
+
+YINDENT             {   
+                        int tok = parser.token;
+                        int nl_count = 0, fold_nl = 0, nl_begin = 0;
+
+                        int indent = tok;
+                        NEWLINE(indent);
+                        while(indent < parser.cursor) {
+                          if(parser.buffer.buffer[indent] == '\t') {
+                            error("TAB found in your indentation, please remove",parser);
+                          } else if(isNewline(++indent) != 0) {
+                            NEWLINE(indent);
+                          }
+                        }
+                        int indt_len = 0;
+                        if(parser.buffer.buffer[parser.cursor] == 0) {
+                          indt_len = -1;
+                          tok = parser.cursor-1;
+                        } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
+                          indt_len = parser.cursor - parser.lineptr;
+                        }
+
+                        lvl = parser.currentLevel();
+
+                        if(lvl.status != LevelStatus.block) {
+                            parentIndent = GET_TRUE_YAML_INDENT();
+                            if(forceIndent > 0) forceIndent += parentIndent;
+                            if(indt_len > parentIndent) {
+                                int new_spaces = forceIndent > 0 ? forceIndent : indt_len;
+                                parser.addLevel(new_spaces, LevelStatus.block);
+                                lastIndent = indt_len - new_spaces;
+                                nl_begin = 1;
+                                lvl = parser.currentLevel();
+                            } else {
+                                parser.cursor = parser.token;
+                                RETURN_YAML_BLOCK(q, blockType, nlDoWhat);
+                                return YAML_BLOCK;
+                            }
+                        }
+
+                        /*
+                         * Fold only in the event of two lines being on the leftmost
+                         * indentation.
+                         */
+                        if(blockType == YAML.BLOCK_FOLD && lastIndent == 0 && (indt_len - lvl.spaces) == 0) {
+                            fold_nl = 1;
+                        }
+
+                        int pacer = parser.token;
+                        while(pacer < parser.cursor) {
+                            int nl_len = newlineLen(pacer++);
+                            if(nl_len>0) {
+                                nl_count++;
+                                pacer += (nl_len - 1);
+                            }
+                        }
+
+                        if(fold_nl == 1 || nl_begin == 1) {
+                            nl_count--;
+                        }
+
+                        if(nl_count < 1 && nl_begin == 0) {
+                            q.cat(' ');
+                        } else {
+                            for(int i = 0; i < nl_count; i++) {
+                                q.cat('\n');
+                            }
+                        }
+
+                        lastIndent = indt_len - lvl.spaces;
+                        parser.cursor -= lastIndent;
+
+                        if(indt_len < lvl.spaces) {
+                            parser.popLevel();
+                            parser.cursor = parser.token;
+                            RETURN_YAML_BLOCK(q, blockType, nlDoWhat);
+                            return YAML_BLOCK;
+                        }
+
+                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                    }
+
+
+"#"                 {   lvl = parser.currentLevel();
+                        if(lvl.status != LevelStatus.block) {
+                            eatComments();
+                            parser.token = parser.cursor;
+                        } else {
+                            q.cat(parser.buffer.buffer[parser.token]);
+                        }
+                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                    }
+              
+
+NULL                {   parser.cursor--;
+                        parser.popLevel();
+                        RETURN_YAML_BLOCK(q, blockType, nlDoWhat); 
+                        return YAML_BLOCK;
+                    }
+
+"---" ENDSPC        {   if(parser.token == parser.lineptr) {
+                            if(blockType == YAML.BLOCK_FOLD && q.idx > 0) {
+                                q.idx--;
+                            }
+                            q.cat('\n');
+                            parser.popLevel();
+                            parser.cursor = parser.token;
+                            RETURN_YAML_BLOCK(q, blockType, nlDoWhat);
+                            return YAML_BLOCK;
+                        } else {
+                            q.cat(parser.buffer.buffer[parser.token]);
+                            parser.cursor = parser.token + 1;
+                            mainLoopGoto = ScalarBlock2; break gotoSomething;
+                        }
+                    }
+
+ANY                 {   q.cat(parser.buffer.buffer[parser.token]);
+                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                    }
+
+
+*/
+}
                 }
                 return 0;                
             }
