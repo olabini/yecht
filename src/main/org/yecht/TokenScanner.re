@@ -18,8 +18,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
        case YAML_UTF8:
          return new TokenScanner(parser);
        case Bytecode_UTF8:
-         // TODO: fix
-         return null;
+         return new BytecodeScanner(parser);
        case YAML_UTF16:
          error("UTF-16 is not currently supported in Yecht.\nPlease contribute code to help this happen!", parser);
          return null;

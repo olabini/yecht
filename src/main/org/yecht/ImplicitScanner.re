@@ -127,6 +127,7 @@ MERGE NULL          {   return "merge"; }
 ANY                 {   return "str"; }
 
 */
+        return "str";
     }
 
     // syck_type_id_to_uri
@@ -165,5 +166,6 @@ DNSNAMERE "," TAGDATE "/"  {
 ANY             {   return Parser.taguri(YAML.DOMAIN, type_id); }
 
 */
+        return null;
     }
 }
