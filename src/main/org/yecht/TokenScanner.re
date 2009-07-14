@@ -92,10 +92,63 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
        parser.cursor = parser.token + n;
    }
 
+   private static class QuotedString {
+       public int idx = 0;
+       public int capa = 100;
+       public byte[] str;
+
+       public QuotedString() {
+           str = new byte[100];
+       }
+
+       public void cat(char l) {
+           cat((byte)l);
+       }
+      
+       public void cat(byte l) {
+           if(idx + 1 >= capa) {
+               capa += QUOTELEN;
+               str = YAML.realloc(str, capa);
+           }
+           str[idx++] = l;
+           str[idx] = 0;
+       }
+
+       public void cat(byte[] l, int cs, int cl) {
+           while(idx + cl >= capa) {
+               capa += QUOTELEN;
+               str = YAML.realloc(str, capa);
+           }
+           System.arraycopy(l, cs, str, idx, cl);
+           idx += cl;
+           str[idx] = 0;
+       }
+
+       public void plain_is_inl() {
+           int walker = idx - 1;
+           while(walker > 0 && (str[walker] == '\n' || str[walker] == ' ' || str[walker] == '\t')) {
+               idx--;
+               str[walker] = 0;
+               walker--;
+          }
+       }
+   }
+
+   public void RETURN_IMPLICIT(QuotedString q) {
+       Node n = Node.allocStr();
+       parser.cursor = parser.token;
+       Data.Str dd = (Data.Str)n.data;
+       dd.ptr = Pointer.create(q.str, 0);
+       dd.len = q.idx;
+       dd.style = ScalarStyle.Plain;                            
+       lval = n;
+       if(parser.implicit_typing) {
+           ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
+       }
+   }
+
    private int real_yylex() throws IOException {
-     int qidx = 0;
-     int qcapa = 100;
-     byte[] qstr = null;
+     QuotedString q = null;
      Level plvl = null;
      int parentIndent = -1;
 
@@ -458,9 +511,7 @@ ANY                 {   parser.cursor = parser.toktmp;
 */
                 }
                 case Plain:
-                    qidx = 0;
-                    qcapa = 100;
-                    qstr = new byte[qcapa];
+                    q = new QuotedString();
 
                     parser.cursor = parser.token;
                     plvl = parser.currentLevel();
@@ -477,7 +528,7 @@ ANY                 {   parser.cursor = parser.toktmp;
                     }
                 case Plain2:
                     parser.token = parser.cursor;
-                case Plain3:
+                case Plain3: {
 /*!re2j
 
 YINDENT             {   
@@ -503,17 +554,7 @@ YINDENT             {
                         Level lvl = parser.currentLevel();
 
                         if(indt_len <= parentIndent) {
-                            // RETURN_IMPLICIT
-                            Node n = Node.allocStr();
-                            parser.cursor = parser.token;
-                            Data.Str dd = (Data.Str)n.data;
-                            dd.ptr = Pointer.create(qstr, 0);
-                            dd.len = qidx;
-                            dd.style = ScalarStyle.Plain;                            
-                            lval = n;
-                            if(parser.implicit_typing) {
-                              ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                            }
+                            RETURN_IMPLICIT(q);
                             return YAML_PLAIN;
                         }
 
@@ -526,20 +567,10 @@ YINDENT             {
                         }
 
                         if(nl_count <= 1) {
-                            if(qidx + 1 >= qcapa) {
-                                qcapa += QUOTELEN;
-                                qstr = YAML.realloc(qstr, qcapa);
-                            }
-                            qstr[qidx++] = ' ';
-                            qstr[qidx] = 0;
+                            q.cat(' ');
                         } else {
                             for(int i = 0; i < nl_count - 1; i++) {
-                                if(qidx + 1 >= qcapa) {
-                                    qcapa += QUOTELEN;
-                                    qstr = YAML.realloc(qstr, qcapa);
-                                }
-                                qstr[qidx++] = '\n';
-                                qstr[qidx] = 0;
+                                q.cat('\n');
                             }
                         }
 
@@ -547,17 +578,7 @@ YINDENT             {
                     }
 
 ALLX                {   
-                        // RETURN_IMPLICIT
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
@@ -567,36 +588,13 @@ ICOMMA              {
                             if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
                                 parser.cursor--;
                             }
-
-                            while(qidx + (parser.cursor - parser.token) >= qcapa) {
-                                qcapa += QUOTELEN;
-                                qstr = YAML.realloc(qstr, qcapa);
-                            }
-                            System.arraycopy(parser.buffer.buffer, parser.token, qstr, qidx, (parser.cursor - parser.token));
-                            qidx += (parser.cursor - parser.token);
-                            qstr[qidx] = 0;
-
+                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
                             mainLoopGoto = Plain2; break gotoSomething;
                         } else {
-                            // PLAIN_IS_INL
-                            int walker = qidx - 1;
-                            while(walker > 0 && (qstr[walker] == '\n' || qstr[walker] == ' ' || qstr[walker] == '\t')) {
-                              qidx--;
-                              qstr[walker] = 0;
-                              walker--;
-                            }
+                            q.plain_is_inl();
                         }
 
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
@@ -606,36 +604,13 @@ IMAPC               {
                             if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
                                 parser.cursor--;
                             }
-
-                            while(qidx + (parser.cursor - parser.token) >= qcapa) {
-                                qcapa += QUOTELEN;
-                                qstr = YAML.realloc(qstr, qcapa);
-                            }
-                            System.arraycopy(parser.buffer.buffer, parser.token, qstr, qidx, (parser.cursor - parser.token));
-                            qidx += (parser.cursor - parser.token);
-                            qstr[qidx] = 0;
-
+                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
                             mainLoopGoto = Plain2; break gotoSomething;
                         } else {
-                            // PLAIN_IS_INL
-                            int walker = qidx - 1;
-                            while(walker > 0 && (qstr[walker] == '\n' || qstr[walker] == ' ' || qstr[walker] == '\t')) {
-                              qidx--;
-                              qstr[walker] = 0;
-                              walker--;
-                            }
+                            q.plain_is_inl();
                         }
 
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
@@ -645,68 +620,27 @@ ISEQC               {
                             if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
                                 parser.cursor--;
                             }
-
-                            while(qidx + (parser.cursor - parser.token) >= qcapa) {
-                                qcapa += QUOTELEN;
-                                qstr = YAML.realloc(qstr, qcapa);
-                            }
-                            System.arraycopy(parser.buffer.buffer, parser.token, qstr, qidx, (parser.cursor - parser.token));
-                            qidx += (parser.cursor - parser.token);
-                            qstr[qidx] = 0;
-
+                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
                             mainLoopGoto = Plain2; break gotoSomething;
                         } else {
-                            // PLAIN_IS_INL
-                            int walker = qidx - 1;
-                            while(walker > 0 && (qstr[walker] == '\n' || qstr[walker] == ' ' || qstr[walker] == '\t')) {
-                              qidx--;
-                              qstr[walker] = 0;
-                              walker--;
-                            }
+                            q.plain_is_inl();
                         }
 
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
 " #"                {   eatComments(); 
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
 NULL                {   
-                        Node n = Node.allocStr();
-                        parser.cursor = parser.token;
-                        Data.Str dd = (Data.Str)n.data;
-                        dd.ptr = Pointer.create(qstr, 0);
-                        dd.len = qidx;
-                        dd.style = ScalarStyle.Plain;                            
-                        lval = n;
-                        if(parser.implicit_typing) {
-                          ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
-                        }
+                        RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
 
-SPCTAB              {   if(qidx == 0) {
+SPCTAB              {   if(q.idx == 0) {
                             mainLoopGoto = Plain2; break gotoSomething;
                         } else {
                             mainLoopGoto = Plain3; break gotoSomething;
@@ -714,19 +648,92 @@ SPCTAB              {   if(qidx == 0) {
                     }
 
 ANY                 {
-                        while(qidx + (parser.cursor - parser.token) >= qcapa) {
-                            qcapa += QUOTELEN;
-                            qstr = YAML.realloc(qstr, qcapa);
-                        }
-                        System.arraycopy(parser.buffer.buffer, parser.token, qstr, qidx, (parser.cursor - parser.token));
-                        qidx += (parser.cursor - parser.token);
-                        qstr[qidx] = 0;
+                        q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
                         mainLoopGoto = Plain2; break gotoSomething;
                     }
 
 */
+}
                 case SingleQuote:
-                case SingleQuote2:
+                    q = new QuotedString();
+                case SingleQuote2: {
+                    parser.token = parser.cursor;
+/*!re2j
+
+YINDENT             {
+                        // GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN )
+                        int indent = parser.token;
+                        NEWLINE(indent);
+                        while(indent < parser.cursor) {
+                          if(parser.buffer.buffer[indent] == '\t') {
+                            error("TAB found in your indentation, please remove",parser);
+                          } else if(isNewline(++indent) != 0) {
+                            NEWLINE(indent);
+                          }
+                        }
+                        int indt_len = 0;
+                        if(parser.buffer.buffer[parser.cursor] == 0) {
+                          indt_len = -1;
+                          parser.token = parser.cursor-1;
+                        } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
+                          indt_len = parser.cursor - parser.lineptr;
+                        }
+
+                        int nl_count = 0;
+                        Level lvl = parser.currentLevel();
+                        if(lvl.status != LevelStatus.str) {
+                            parser.addLevel(indt_len, LevelStatus.str);
+                        } else if(indt_len < lvl.spaces) {
+                            // Error!
+                        }
+
+                        while(parser.token < parser.cursor) {
+                          int nl_len = newlineLen(parser.token++);
+                          if(nl_len > 0) {
+                            nl_count++;
+                            parser.token += (nl_len - 1);
+                          }
+                        }
+                        if(nl_count <= 1) {
+                            q.cat(' ');
+                        } else {
+                            for(int i = 0; i < nl_count - 1; i++) {
+                                q.cat('\n');
+                            }
+                        }
+
+                        mainLoopGoto = SingleQuote2; break gotoSomething;
+                    }
+
+"''"                {   q.cat('\'');
+                        mainLoopGoto = SingleQuote2; break gotoSomething;
+                    }
+
+( "'" | NULL )      {   
+                        Node n = Node.allocStr();
+                        Level lvl = parser.currentLevel();
+                        if(lvl.status == LevelStatus.str) {
+                            parser.popLevel();
+                        }
+                        if(parser.taguri_expansion) {
+                            n.type_id = Parser.taguri(YAML.DOMAIN, "str");
+                        } else {
+                            n.type_id = "str";
+                        }
+                        Data.Str dd = (Data.Str)n.data;
+                        dd.ptr = Pointer.create(q.str, 0);
+                        dd.len = q.idx;
+                        dd.style = ScalarStyle.OneQuote;
+                        lval = n;
+                        return YAML_PLAIN; 
+                    }
+
+ANY                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
+                        mainLoopGoto = SingleQuote2; break gotoSomething;
+                    }
+
+*/
+}                    
                 case DoubleQuote:
                 case DoubleQuote2:
                 case TransferMethod:
