@@ -23,6 +23,7 @@ public class YAML {
     public final static int ALLOC_CT = 8;
     public final static int BUFFERSIZE = 4096;
 
+    public final static String DEFAULT_ANCHOR_FORMAT = "id%03d";
 
     /* specify list of bytecodes */
     public final static byte BYTE_FINISH          = (byte) 0;

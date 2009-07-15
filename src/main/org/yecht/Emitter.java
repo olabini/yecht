@@ -986,4 +986,30 @@ public class Emitter {
         default: break;
         }
     }
+
+    // syck_emitter_mark_node
+    public long markNode(long n) {
+        long oid = 0;
+        if(this.markers == null) {
+            this.markers = new HashMap<Long, Long>();
+        }
+
+        if(!this.markers.containsKey(n)) {
+            oid = this.markers.size() + 1;
+            markers.put(n, oid);
+        } else {
+            if(this.anchors == null) {
+                this.anchors = new HashMap<Long, String>();
+            }
+            if(!anchors.containsKey(oid)) {
+                int idx = 0;
+                String anc = this.anchor_format == null ? YAML.DEFAULT_ANCHOR_FORMAT : this.anchor_format;
+                idx = anchors.size() + 1;
+                String anchor_name = String.format(anc, idx);
+                anchors.put(oid, anchor_name);
+            }
+        }
+
+        return oid;
+    }
 }// Emitter
