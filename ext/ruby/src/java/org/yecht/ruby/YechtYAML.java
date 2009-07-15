@@ -6,13 +6,21 @@ import org.yecht.IoStrRead;
 import org.yecht.JechtIO;
 import org.yecht.Parser;
 import org.yecht.Pointer;
+import org.yecht.ImplicitScanner;
 
 import org.jruby.Ruby;
+import org.jruby.RubyArray;
 import org.jruby.RubyClass;
+import org.jruby.RubyEnumerable;
+import org.jruby.RubyHash;
+import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyString;
 import org.jruby.anno.JRubyMethod;
+import org.jruby.runtime.Block;
+import org.jruby.runtime.BlockCallback;
+import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.util.ByteList;
@@ -91,13 +99,155 @@ public class YechtYAML {
     }
 
     public static class Resolver {
-//     rb_define_method( cResolver, "initialize", syck_resolver_initialize, 0 );
-//     rb_define_method( cResolver, "add_type", syck_resolver_add_type, 2 );
-//     rb_define_method( cResolver, "use_types_at", syck_resolver_use_types_at, 1 );
-//     rb_define_method( cResolver, "detect_implicit", syck_resolver_detect_implicit, 1 );
-//     rb_define_method( cResolver, "transfer", syck_resolver_transfer, 2 );
+        // syck_const_find
+        public static IRubyObject const_find(IRubyObject self, IRubyObject const_name) {
+            RubyModule tclass = self.getRuntime().getObject();
+            RubyArray tparts = ((RubyString)const_name).split(self.getRuntime().getCurrentContext(), self.getRuntime().newString("::"));
+            for(int i=0; i < tparts.getLength(); i++) {
+                String tpart = tparts.entry(i).toString();
+                if(!tclass.hasConstant(tpart)) {
+                    return self.getRuntime().getNil();
+                }
+                tclass = (RubyModule)tclass.getConstant(tpart);
+            }
+            return tclass;
+        }
+
+        // syck_resolver_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self) {
+            self.getInstanceVariables().setInstanceVariable("@tags", RubyHash.newHash(self.getRuntime()));
+            return self;
+        }
+
+        // syck_resolver_add_type
+        @JRubyMethod
+        public static IRubyObject add_type(IRubyObject self, IRubyObject taguri, IRubyObject cls) {
+            IRubyObject tags = self.callMethod(self.getRuntime().getCurrentContext(), "tags");
+            ((RubyHash)tags).fastASet(taguri, cls);
+            return self.getRuntime().getNil();
+        }        
+
+        // syck_resolver_use_types_at
+        @JRubyMethod
+        public static IRubyObject use_types_at(IRubyObject self, IRubyObject hsh) {
+            self.getInstanceVariables().setInstanceVariable("@tags", hsh);
+            return self.getRuntime().getNil();
+        }        
+
+        // syck_resolver_detect_implicit
+        @JRubyMethod
+        public static IRubyObject detect_implicit(IRubyObject self, IRubyObject val) {
+            return RubyString.newEmptyString(self.getRuntime());
+        }        
+
+        // syck_resolver_transfer
+        @JRubyMethod
+        public static IRubyObject transfer(IRubyObject self, IRubyObject type, IRubyObject val) {
+            final Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            if(type.isNil() || type.convertToString().getByteList().realSize == 0) {
+                type = self.callMethod(ctx, "detect_implicit", val);
+            }
+            
+            if(!(type.isNil() || type.convertToString().getByteList().realSize == 0)) {
+                IRubyObject colon = runtime.newString(":");
+                IRubyObject tags = self.callMethod(ctx, "tags");
+                IRubyObject target_class = ((RubyHash)tags).fastARef(type);
+                IRubyObject subclass = target_class;
+                IRubyObject obj = runtime.getNil();
+                
+                if(target_class.isNil()) {
+                    RubyArray subclass_parts = runtime.newArray();
+                    RubyArray parts = ((RubyString)type).split(ctx, colon);
+                    while(parts.getLength() > 1) {
+                        subclass_parts.unshift(parts.pop(ctx));
+                        IRubyObject partial = parts.join(ctx, colon);
+                        target_class = ((RubyHash)tags).fastARef(partial);
+                        if(target_class.isNil()) {
+                            ((RubyString)partial).append(colon);
+                            target_class = ((RubyHash)tags).fastARef(partial);
+                        }
+                        if(!target_class.isNil()) {
+                            subclass = target_class;
+                            if(subclass_parts.getLength() > 0 && target_class.respondsTo("yaml_tag_subclasses?") && target_class.callMethod(ctx, "yaml_tag_subclasses?").isTrue()) {
+                                subclass = subclass_parts.join(ctx, colon);
+                                subclass = target_class.callMethod(ctx, "yaml_tag_read_class", subclass);
+                                IRubyObject subclass_v = const_find(self, subclass);
+                                if(subclass_v != runtime.getNil()) {
+                                    subclass = subclass_v;
+                                } else if(target_class == runtime.getObject() && subclass_v == runtime.getNil()) {
+                                    target_class = ((RubyModule)runtime.getModule("YAML")).getConstant("Object");
+                                    type = subclass;
+                                    subclass = target_class;
+                                } else {
+                                    throw runtime.newTypeError("invalid subclass");
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if(target_class.respondsTo("call")) {
+                    obj = target_class.callMethod(ctx, "call", new IRubyObject[]{type, val});
+                } else {
+                    if(target_class.respondsTo("yaml_new")) {
+                        obj = target_class.callMethod(ctx, "yaml_new", new IRubyObject[]{subclass, type, val});
+                    } else if(!target_class.isNil()) {
+                        if(subclass == runtime.getBignum()) {
+                            obj = RubyNumeric.str2inum(runtime, val.convertToString(), 10);
+                        } else {
+                            obj = ((RubyClass)subclass).allocate();
+                        }
+                        
+                        if(obj.respondsTo("yaml_initialize")) {
+                            obj.callMethod(ctx, "yaml_initialize", new IRubyObject[]{type, val});
+                        } else if(!obj.isNil() && val instanceof RubyHash) {
+                            final IRubyObject _obj = obj;
+                            RubyEnumerable.callEach(runtime, ctx, val, new BlockCallback() {
+                                    public IRubyObject call(ThreadContext _ctx, IRubyObject[] largs, Block blk) {
+                                        IRubyObject ivname = ((RubyArray)largs[0]).entry(0);
+                                        String ivn = "@" + ivname.convertToString().toString();
+                                        _obj.getInstanceVariables().setInstanceVariable(ivn, ((RubyArray)largs[0]).entry(1));
+                                        return runtime.getNil();
+                                    }
+                                });
+                        }
+                    } else {
+                        RubyArray parts = ((RubyString)type).split(ctx, colon);
+                        IRubyObject scheme = parts.shift(ctx);
+                        if(scheme.convertToString().toString().equals("x-private")) {
+                            IRubyObject name = parts.join(ctx, colon);
+                            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("PrivateType").callMethod(ctx, "new", new IRubyObject[]{name, val});
+                        } else {
+                            IRubyObject domain = parts.shift(ctx);
+                            IRubyObject name = parts.join(ctx, colon);
+                            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DomainType").callMethod(ctx, "new", new IRubyObject[]{domain, name, val});
+                        }
+                    }
+                }
+                
+                val = obj;
+            }
+
+            return val;
+
+        }        
+
+
 //     rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
-//     rb_define_method( cResolver, "tagurize", syck_resolver_tagurize, 1 );
+
+        // syck_resolver_tagurize
+        @JRubyMethod
+        public static IRubyObject tagurize(IRubyObject self, IRubyObject val) {
+            IRubyObject tmp = val.checkStringType();
+            if(!tmp.isNil()) {
+                String taguri = ImplicitScanner.typeIdToUri(tmp.toString());
+                val = self.getRuntime().newString(taguri);
+            }
+            return val;
+        }        
     }
 
     public static class DefaultResolver {
