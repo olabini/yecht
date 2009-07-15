@@ -562,7 +562,7 @@ public class Emitter {
             break;
         case None:
         case TwoQuote:
-//             syck_emit_2quoted( e, force_width, str, len );
+            emit2Quoted(force_width, _str, len);
             break;
         case Fold:
 //             syck_emit_folded( e, force_width, keep_nl, str, len );
@@ -652,5 +652,77 @@ public class Emitter {
 
         }
         write(SINGLE_QUOTE, 1);
+    }
+
+    private final static Pointer SLASH_QUOTE = Pointer.create("\\\"");
+    private final static Pointer SLASH_SLASH = Pointer.create("\\\\");
+    private final static Pointer SLASH_ZERO = Pointer.create("\\0");
+    private final static Pointer SLASH_A = Pointer.create("\\a");
+    private final static Pointer SLASH_B = Pointer.create("\\b");
+    private final static Pointer SLASH_F = Pointer.create("\\f");
+    private final static Pointer SLASH_R = Pointer.create("\\r");
+    private final static Pointer SLASH_T = Pointer.create("\\t");
+    private final static Pointer SLASH_V = Pointer.create("\\v");
+    private final static Pointer SLASH_E = Pointer.create("\\e");
+    private final static Pointer SLASH_N = Pointer.create("\\n");
+
+    // syck_emit_2quoted
+    public void emit2Quoted(int width, Pointer _str, final int len) {
+        byte[] bstr = _str.buffer;
+        int str = _str.start;
+
+        int do_indent = 0;
+        int mark = str;
+        int start = str;
+        int end = str;
+
+        write(DOUBLE_QUOTE, 1);
+        while( mark < str + len ) {
+            if(do_indent > 0 ) {
+                if(do_indent == 2) {
+                    write(BACKSLASH, 1);
+                }
+                emitIndent();
+                do_indent = 0;
+            }
+            switch(bstr[mark]) {
+            /* Escape sequences allowed within double quotes. */
+            case '"':  write( SLASH_QUOTE, 2 ); break;
+            case '\\': write( SLASH_SLASH, 2 ); break;
+            case '\0': write( SLASH_ZERO,  2 ); break;
+            case 0x07: write( SLASH_A,  2 ); break;
+            case '\b': write( SLASH_B,  2 ); break;
+            case '\f': write( SLASH_F,  2 ); break;
+            case '\r': write( SLASH_R,  2 ); break;
+            case '\t': write( SLASH_T,  2 ); break;
+            case 0x0B: write( SLASH_V,  2 ); break;
+            case 0x1B: write( SLASH_E,  2 ); break;
+
+            case '\n':
+                end = mark + 1;
+                write( SLASH_N, 2 );
+                do_indent = 2;
+                start = mark + 1;
+                if( start < str + len && ( bstr[start] == ' ' || bstr[start] == '\n' ) ) {
+                    do_indent = 0;
+                }
+                break;
+
+            case ' ':
+                if( width > 0 && bstr[start] != ' ' && mark - end > width ) {
+                    do_indent = 1;
+                    end = mark + 1;
+                } else {
+                    write(SPACE, 1 );
+                }
+                break;
+
+            default:
+                escape(_str.withStart(mark), 1 );
+                break;
+            }
+            mark++;
+        }
+        write(DOUBLE_QUOTE, 1 );
     }
 }// Emitter
