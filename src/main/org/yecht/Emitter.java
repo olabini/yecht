@@ -569,7 +569,7 @@ public class Emitter {
             emit2Quoted(force_width, _str, len);
             break;
         case Fold:
-//             syck_emit_folded( e, force_width, keep_nl, str, len );
+            emitFolded(force_width, keep_nl, _str, len);
             break;
         case Literal:
             emitLiteral(keep_nl, _str, len);
@@ -764,6 +764,58 @@ public class Emitter {
         end = str + len;
         if( start < end ) {
             write(_str.withStart(start), end - start);
+        }
+    }
+
+    // syck_emit_folded
+    public void emitFolded(int width, int keep_nl, Pointer _str, int len) {
+        byte[] bstr = _str.buffer;
+        int str = _str.start;
+
+        int mark = str;
+        int start = str;
+        int end = str;
+
+        write(GT, 1);
+        if(keep_nl == YAML.NL_CHOMP) {
+            write(MINUS, 1);
+        } else if(keep_nl == YAML.NL_KEEP) {
+            write(PLUS, 1);
+        }
+        emitIndent();
+
+        if(width <= 0) width = this.best_width;
+
+        while(mark < str + len) {
+            switch(bstr[mark]) {
+            case '\n':
+                write(_str.withStart(end), mark - end );
+                end = mark + 1;
+                if(bstr[start] != ' ' && bstr[start] != '\n' && bstr[end] != '\n' && bstr[end] != ' ' ) {
+                    write(NEWLINE, 1);
+                }
+                if(mark + 1 == str + len) {
+                    if(keep_nl != YAML.NL_KEEP) write(NEWLINE, 1);
+                } else {
+                    emitIndent();
+                }
+                start = mark + 1;
+                break;
+            case ' ':
+                if(bstr[start] != ' ') {
+                    if(mark - end > width) {
+                        write(_str.withStart(end), mark - end );
+                        emitIndent();
+                        end = mark + 1;
+                    }
+                }
+                break;
+            }
+            mark++;
+        }
+
+        if(end < mark) {
+            write(_str.withStart(end), mark - end);
         }
     }
 }// Emitter
