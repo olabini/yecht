@@ -200,6 +200,9 @@ public class Emitter {
     private final static Pointer BANG_SPACE = Pointer.create("! ");
     private final static Pointer TWO_BANGS = Pointer.create("!!");
     private final static Pointer COLON_SPACE = Pointer.create(": ");
+    private final static Pointer BACKSLASH = Pointer.create("\\");
+    private final static Pointer ZERO = Pointer.create("0");
+    private final static Pointer X = Pointer.create("x");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -571,6 +574,33 @@ public class Emitter {
 
         if(parent.status == LevelStatus.mapx) {
             write(NEWLINE, 1);
+        }
+    }
+
+    private final static Pointer hex_table = Pointer.create("0123456789ABCDEF");
+
+    // syck_emitter_escape
+    public void escape(Pointer _src, int len) {
+        byte[] bsrc = _src.buffer;
+        int src = _src.start;
+        for(int i=0; i<len; i++) {
+            int curr = (int)bsrc[src+i]&0xFF;
+
+            if(curr < 0x20 || (0x7E < curr)) {
+                write(BACKSLASH, 1);
+                if(curr == 0) {
+                    write(ZERO, 1);
+                } else {
+                    write(X, 1);
+                    write(hex_table.withStart((curr & 0xF0) >> 4), 1);
+                    write(hex_table.withStart(curr & 0x0F), 1);
+                }
+            } else {
+                write(_src.withStart(src+i), 1);
+                if(curr == '\\') {
+                    write(BACKSLASH, 1);
+                }
+            }
         }
     }
 }// Emitter
