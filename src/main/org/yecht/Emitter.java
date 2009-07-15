@@ -320,4 +320,142 @@ public class Emitter {
         }
         lvl.anctag = 1;
     }
+
+    // syck_emit_indent
+    public void emitIndent() {
+        Level lvl = currentLevel();
+        if(bufpos == 0 && marker == 0) {
+            return;
+        }
+        if(lvl.spaces >= 0) {
+            byte[] spcs = new byte[lvl.spaces + 2];
+            spcs[0] = '\n';
+            spcs[lvl.spaces + 1] = 0;
+            for(int i=0; i<lvl.spaces; i++) {
+                spcs[i+1] = ' ';
+            }
+            write(Pointer.create(spcs, 0), lvl.spaces + 1);
+        }
+    }
+
+    /* Clear the scan */
+    private final static int SCAN_NONE       =0;
+    /* All printable characters? */
+    private final static int SCAN_NONPRINT   =1;
+    /* Any indented lines? */
+    private final static int SCAN_INDENTED   =2;
+    /* Larger than the requested width? */
+    private final static int SCAN_WIDE       =4;
+    /* Opens or closes with whitespace? */
+    private final static int SCAN_WHITEEDGE  =8;
+    /* Contains a newline */
+    private final static int SCAN_NEWLINE    =16;
+    /* Contains a single quote */
+    private final static int SCAN_SINGLEQ    =32;
+    /* Contains a double quote */
+    private final static int SCAN_DOUBLEQ    =64;
+    /* Starts with a token */
+    private final static int SCAN_INDIC_S    =128;
+    /* Contains a flow indicator */
+    private final static int SCAN_INDIC_C    =256;
+    /* Ends without newlines */
+    private final static int SCAN_NONL_E     =512;
+    /* Ends with many newlines */
+    private final static int SCAN_MANYNL_E   =1024;
+    /* Contains flow map indicators */
+    private final static int SCAN_FLOWMAP    =2048;
+    /* Contains flow seq indicators */
+    private final static int SCAN_FLOWSEQ    =4096;
+    /* Contains a valid doc separator */
+    private final static int SCAN_DOCSEP     =8192;
+
+    // syck_scan_scalar
+    public int scanScalar(int req_width, Pointer _cursor, int len) {
+        byte[] cursorb = _cursor.buffer;
+        int cursor = _cursor.start;
+
+        int start = 0;
+        int flags = SCAN_NONE;
+        if(len < 1) {
+            return flags;
+        }
+
+        switch(cursorb[cursor]) {
+        case '[': case ']':
+        case '{': case '}':
+        case '!': case '*':
+        case '&': case '|':
+        case '>': case '\'':
+        case '"': case '#':
+        case '%': case '@':
+        case '`':
+            flags |= SCAN_INDIC_S;
+            break;
+        case '-': case ':':
+        case '?': case ',':
+            if(len == 1 || cursorb[cursor+1] == ' ' || cursorb[cursor+1] == '\n') {
+                flags |= SCAN_INDIC_S;
+            }
+            break;
+        }
+
+        if(cursorb[cursor + len - 1] != '\n') {
+            flags |= SCAN_NONL_E;
+        } else if(len > 1 && cursorb[cursor + len - 2] == '\n') {
+            flags |= SCAN_MANYNL_E;
+        }
+
+        if(
+           (len>0 && (cursorb[cursor] == ' ' || cursorb[cursor] == '\t')) ||
+           (len>1 && (cursorb[cursor + len - 1] == ' ' || cursorb[cursor + len - 1] == '\t'))
+           ) {
+            flags |= SCAN_WHITEEDGE;
+        }
+
+        if(len >= 3 && cursorb[cursor] == '-' && cursorb[cursor+1] == '-' && cursorb[cursor+2] == '-') {
+            flags |= SCAN_DOCSEP;
+        }
+
+        for(int i=0; i<len; i++) {
+            int ci = (int)(cursorb[cursor+i]&0xFF);
+            if(! ( ci == 0x9 ||
+                   ci == 0xA ||
+                   ci == 0xD ||
+                   (ci >= 0x20 && ci <= 0x7E))) {
+                flags |= SCAN_NONPRINT;
+            } else if(ci == '\n') {
+                flags |= SCAN_NEWLINE;
+                if(len - i >= 3 && cursorb[cursor+i+1] == '-' && cursorb[cursor+i+2] == '-' && cursorb[cursor+i+3] == '-' ) {
+                    flags |= SCAN_DOCSEP;
+                }
+                if(cursorb[cursor+i+1] == ' ' || cursorb[cursor+i+1] == '\t') {
+                    flags |= SCAN_INDENTED;
+                }
+                if(req_width > 0 && (i - start) > req_width) {
+                    flags |= SCAN_WIDE;
+                }
+                start = i;
+            } else if(ci == '\'') {
+                flags |= SCAN_SINGLEQ;
+            } else if(ci == '"') {
+                flags |= SCAN_DOUBLEQ;
+            } else if(ci == ']') {
+                flags |= SCAN_FLOWSEQ;
+            } else if(ci == '}') {
+                flags |= SCAN_FLOWMAP;
+            } else if((ci == ' ' && cursorb[cursor+i+1] == '#' ) ||
+                      (ci == ':' && (cursorb[cursor+i+1] == ' ' || 
+                                     cursorb[cursor+i+1] == '\n' || 
+                                     i == len - 1 ))) {
+                flags |= SCAN_INDIC_C;
+            } else if(ci == ',' && (cursorb[cursor+i+1] == ' ' || 
+                                    cursorb[cursor+i+1] == '\n' || 
+                                    i == len - 1 )) {
+                flags |= SCAN_FLOWMAP;
+                flags |= SCAN_FLOWSEQ;
+            }
+        }
+
+        return flags;
+    }
 }// Emitter
