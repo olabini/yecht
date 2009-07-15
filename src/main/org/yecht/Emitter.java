@@ -458,4 +458,119 @@ public class Emitter {
 
         return flags;
     }
+
+    private final static Pointer EMPTY = Pointer.create(new byte[0], 0);
+    private final static Pointer TILDE = Pointer.create("~");
+
+    // syck_emit_scalar
+    public void emitScalar(String tag, ScalarStyle force_style, int force_indent, int force_width, int keep_nl, Pointer _str, int len) {
+        if(_str == null) {
+            _str = EMPTY;
+        }
+
+        byte[] bstr = _str.buffer;
+        int str = _str.start;
+
+        ScalarStyle favor_style = ScalarStyle.Literal;
+        Level parent = parentLevel();
+        Level lvl = currentLevel();
+
+        if(len == 0 && (parent.status == LevelStatus.map || parent.status == LevelStatus.imap) && parent.ncount % 2 == 1 && ImplicitScanner.tagcmp(tag, "tag:yaml.org,2002:null")) {
+            _str = TILDE;
+            bstr = _str.buffer;
+            str = _str.start;
+            len = 1;
+        }
+        
+        int scan = scanScalar(force_width, _str, len);
+        String implicit = Parser.taguri(YAML.DOMAIN, ImplicitScanner.matchImplicit(_str, len));
+        if(!ImplicitScanner.tagcmp(tag, implicit) && ImplicitScanner.tagcmp(tag, "tag:yaml.org,2002:str")) {
+            force_style = ScalarStyle.TwoQuote;
+        } else {
+            if(parent.status == LevelStatus.map && parent.ncount % 2 == 1 && ( !(tag == null || (implicit != null && ImplicitScanner.tagcmp(tag, implicit) && !explicit_typing)))) {
+                write(QUESTION_MARK_SPACE, 2);
+                parent.status = LevelStatus.mapx;
+            }
+            emitTag(tag, implicit);
+        }
+
+        if(force_style == ScalarStyle.None) {
+            if((scan & SCAN_NEWLINE) != 0) {
+                force_style = ScalarStyle.Literal;
+            } else {
+                force_style = ScalarStyle.Plain;
+            }
+        }
+
+        if(this.style == ScalarStyle.Fold) {
+            favor_style = ScalarStyle.Fold;
+        }
+
+        if((scan & SCAN_NONPRINT) != 0) {
+            force_style = ScalarStyle.TwoQuote;
+        } else if((scan & SCAN_WHITEEDGE) != 0) {
+            force_style = ScalarStyle.TwoQuote;
+        } else if(force_style != ScalarStyle.Fold && (scan & SCAN_INDENTED) != 0) {
+            force_style = ScalarStyle.Literal;
+        } else if(force_style == ScalarStyle.Plain && (scan & SCAN_NEWLINE) != 0) {
+            force_style = favor_style;
+        } else if(force_style == ScalarStyle.Plain && parent.status == LevelStatus.iseq && (scan & SCAN_FLOWSEQ) != 0) {
+            force_style = ScalarStyle.TwoQuote;
+        } else if(force_style == ScalarStyle.Plain && parent.status == LevelStatus.imap && (scan & SCAN_FLOWMAP) != 0) {
+            force_style = ScalarStyle.TwoQuote;
+        } else if(force_style == ScalarStyle.Plain && ((scan & SCAN_INDIC_S) != 0 || (scan & SCAN_INDIC_C) != 0)) {
+            if((scan & SCAN_NEWLINE) != 0) {
+                force_style = favor_style;
+            } else {
+                force_style = ScalarStyle.TwoQuote;
+            }
+        }
+
+        if(force_indent > 0) {
+            lvl.spaces = parent.spaces + force_indent;
+        } else if((scan & SCAN_DOCSEP) != 0) {
+            lvl.spaces = parent.spaces + this.indent;
+        }
+        
+        if((parent.status == LevelStatus.map || parent.status == LevelStatus.mapx) && parent.ncount % 2 == 1) {
+            if(force_style != ScalarStyle.Plain) {
+                force_style = ScalarStyle.TwoQuote;
+            }
+        }
+
+        if(parent.status == LevelStatus.imap || parent.status == LevelStatus.iseq) {
+            if(force_style != ScalarStyle.Plain && force_style != ScalarStyle.OneQuote) {
+                force_style = ScalarStyle.TwoQuote;
+            }
+        }
+
+        if((scan & SCAN_NONL_E) != 0) {
+            keep_nl = YAML.NL_CHOMP;
+        } else if((scan & SCAN_MANYNL_E) != 0) {
+            keep_nl = YAML.NL_KEEP;
+        }
+
+        switch(force_style) {
+        case OneQuote:
+//             syck_emit_1quoted( e, force_width, str, len );
+            break;
+        case None:
+        case TwoQuote:
+//             syck_emit_2quoted( e, force_width, str, len );
+            break;
+        case Fold:
+//             syck_emit_folded( e, force_width, keep_nl, str, len );
+            break;
+        case Literal:
+//             syck_emit_literal( e, keep_nl, str, len );
+            break;
+        case Plain:
+            write(_str, len);
+            break;
+        }
+
+        if(parent.status == LevelStatus.mapx) {
+            write(NEWLINE, 1);
+        }
+    }
 }// Emitter
