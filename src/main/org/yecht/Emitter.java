@@ -192,8 +192,13 @@ public class Emitter {
     }
 
     private final static Pointer NEWLINE = Pointer.create("\n");
+    private final static Pointer SPACE = Pointer.create(" ");
+    private final static Pointer SLASH = Pointer.create("/");
     private final static Pointer THREE_DASHES = Pointer.create("--- ");
     private final static Pointer QUESTION_MARK_SPACE = Pointer.create("? ");
+    private final static Pointer BANG = Pointer.create("!");
+    private final static Pointer BANG_SPACE = Pointer.create("! ");
+    private final static Pointer TWO_BANGS = Pointer.create("!!");
     private final static Pointer COLON_SPACE = Pointer.create(": ");
 
     /*
@@ -263,5 +268,56 @@ public class Emitter {
             this.headless = false;
             this.stage = DocStage.open;
         }
+    }
+
+    // syck_emit_tag
+    public void emitTag(String tag, String ignore) {
+        if(tag == null) {
+            return;
+        }
+
+        if(ignore != null && ImplicitScanner.tagcmp(tag, ignore) && !this.explicit_typing) {
+            return;
+        }
+
+        Level lvl = currentLevel();
+
+        if(tag.length() == 0) {
+            write(BANG_SPACE, 2);
+        } else if(tag.startsWith("tag:")) {
+            int taglen = tag.length();
+            Pointer ptag = Pointer.create(tag);
+            write(BANG, 1);
+            if(tag.substring(4).startsWith(YAML.DOMAIN)) {
+                int skip = 4 + YAML.DOMAIN.length() + 1;
+                write(ptag.withStart(skip), taglen - skip);
+            } else {
+                int subd = 4;
+                while(subd < taglen && tag.charAt(subd) != ':') {
+                    subd++;
+                }
+                if(subd < taglen && tag.charAt(subd) == ':') {
+                    if(subd > (YAML.DOMAIN.length() + 5) &&
+                       tag.substring(subd - YAML.DOMAIN.length()).startsWith(YAML.DOMAIN)) {
+                        write(ptag.withStart(4), (subd - YAML.DOMAIN.length()) - 5);
+                        write(SLASH, 1);
+                        write(ptag.withStart(subd+1), taglen - (subd + 1));
+                    } else {
+                        write(ptag.withStart(4), subd - 4);
+                        write(SLASH, 1);
+                        write(ptag.withStart(subd + 1), taglen - (subd + 1));
+                    }
+                } else {
+                    /* TODO: Invalid tag (no colon after domain) */
+                    return;
+                }
+            }
+            write(SPACE, 1);
+        } else if(tag.startsWith("x-private:")) {
+            write(TWO_BANGS, 2);
+            write(Pointer.create(tag.substring(10)), tag.length()-10);
+            write(SPACE, 1);
+        }
+        lvl.anctag = 1;
     }
 }// Emitter

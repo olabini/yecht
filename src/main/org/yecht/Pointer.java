@@ -41,4 +41,8 @@ public class Pointer {
     public void memcpy(Pointer to, int len) {
         System.arraycopy(buffer, start, to.buffer, to.start, len);
     }
+
+    public Pointer withStart(int start) {
+        return Pointer.create(this.buffer, start);
+    }
 }// Pointer
