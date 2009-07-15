@@ -210,6 +210,10 @@ public class Emitter {
     private final static Pointer PLUS = Pointer.create("+");
     private final static Pointer MINUS = Pointer.create("-");
     private final static Pointer GT = Pointer.create(">");
+    private final static Pointer SQUARE_OPEN = Pointer.create("[");
+    private final static Pointer SQUARE_CLOSE = Pointer.create("]");
+    private final static Pointer CURLY_OPEN = Pointer.create("{");
+    private final static Pointer CURLY_CLOSE = Pointer.create("}");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -817,5 +821,45 @@ public class Emitter {
         if(end < mark) {
             write(_str.withStart(end), mark - end);
         }
+    }
+
+    // syck_emit_seq
+    public void emitSeq(String tag, SeqStyle style) {
+         Level parent = parentLevel();
+         Level lvl = currentLevel();
+
+         if(parent.status == LevelStatus.map && parent.ncount % 2 == 1) {
+             write(QUESTION_MARK_SPACE, 2);
+             parent.status = LevelStatus.mapx;
+         }
+
+         emitTag(tag, "tag:yaml.org,2002:seq");
+
+         if(style == SeqStyle.Inline || (parent.status == LevelStatus.imap || parent.status == LevelStatus.iseq)) {
+             write(SQUARE_OPEN, 1);
+             lvl.status = LevelStatus.iseq;
+         } else {
+             lvl.status = LevelStatus.seq;
+         }
+    }
+
+    // syck_emit_map
+    public void emitMap(String tag, MapStyle style) {
+         Level parent = parentLevel();
+         Level lvl = currentLevel();
+
+         if(parent.status == LevelStatus.map && parent.ncount % 2 == 1) {
+             write(QUESTION_MARK_SPACE, 2);
+             parent.status = LevelStatus.mapx;
+         }
+
+         emitTag(tag, "tag:yaml.org,2002:map");
+
+         if(style == MapStyle.Inline || (parent.status == LevelStatus.imap || parent.status == LevelStatus.iseq)) {
+             write(CURLY_OPEN, 1);
+             lvl.status = LevelStatus.imap;
+         } else {
+             lvl.status = LevelStatus.map;
+         }
     }
 }// Emitter
