@@ -216,6 +216,9 @@ public class Emitter {
     private final static Pointer DASH_SPACE = Pointer.create("- ");
     private final static Pointer COMMA_SPACE = Pointer.create(", ");
     private final static Pointer COLON_SPACE = Pointer.create(": ");
+    private final static Pointer EMPTY_ARRAY = Pointer.create("[]\n");
+    private final static Pointer EMPTY_HASH = Pointer.create("{}\n");
+    private final static Pointer COLON = Pointer.create(":");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -945,5 +948,42 @@ public class Emitter {
         lvl.ncount++;
 
         emit(n);
+    }
+
+    // syck_emit_end
+    public void emitEnd() {
+        Level lvl = currentLevel();
+        Level parent = parentLevel();
+        switch(lvl.status) {
+        case seq:
+            if(lvl.ncount == 0) {
+                write(EMPTY_ARRAY, 3);
+            } else if(parent.status == LevelStatus.mapx) {
+                write(NEWLINE, 1);
+            }
+            break;
+        case iseq:
+            write(SQUARE_CLOSE, 1);
+            if(parent.status == LevelStatus.mapx) {
+                write(NEWLINE, 1);
+            }
+            break;
+        case map:
+            if(lvl.ncount == 0) {
+                write(EMPTY_HASH, 3);
+            } else if(lvl.ncount % 2 == 1) {
+                write(COLON, 1);
+            } else if(parent.status == LevelStatus.mapx) {
+                write(NEWLINE, 1);
+            }
+            break;
+        case imap:
+            write(CURLY_CLOSE, 1);
+            if(parent.status == LevelStatus.mapx) {
+                write(NEWLINE, 1);
+            }
+            break;
+        default: break;
+        }
     }
 }// Emitter
