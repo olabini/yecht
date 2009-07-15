@@ -192,6 +192,7 @@ public class Emitter {
     }
 
     private final static Pointer NEWLINE = Pointer.create("\n");
+    private final static Pointer TWO_NEWLINES = Pointer.create("\n\n");
     private final static Pointer SPACE = Pointer.create(" ");
     private final static Pointer SLASH = Pointer.create("/");
     private final static Pointer THREE_DASHES = Pointer.create("--- ");
@@ -203,6 +204,8 @@ public class Emitter {
     private final static Pointer BACKSLASH = Pointer.create("\\");
     private final static Pointer ZERO = Pointer.create("0");
     private final static Pointer X = Pointer.create("x");
+    private final static Pointer SINGLE_QUOTE = Pointer.create("'");
+    private final static Pointer DOUBLE_QUOTE = Pointer.create("\"");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -555,7 +558,7 @@ public class Emitter {
 
         switch(force_style) {
         case OneQuote:
-//             syck_emit_1quoted( e, force_width, str, len );
+            emit1Quoted(force_width, _str, len);
             break;
         case None:
         case TwoQuote:
@@ -602,5 +605,52 @@ public class Emitter {
                 }
             }
         }
+    }
+
+    // syck_emit_1quoted
+    public void emit1Quoted(int width, Pointer _str, final int len) {
+        byte[] bstr = _str.buffer;
+        int str = _str.start;
+
+        boolean do_indent = false;
+        int mark = str;
+        int start = str;
+        int end = str;
+        write(SINGLE_QUOTE, 1);
+        while(mark < str + len) {
+            if(do_indent) {
+                emitIndent();
+                do_indent = false;
+            }
+            switch(bstr[mark]) {
+            case '\'':
+                write(SINGLE_QUOTE, 1);
+                break;
+            case '\n':
+                end = mark + 1;
+                if(bstr[start] != ' ' && bstr[start] != '\n' && bstr[end] != '\n' && bstr[end] != ' ' ) {
+                    write(TWO_NEWLINES, 2);
+                } else {
+                    write(NEWLINE, 1);
+                }
+                do_indent = true;
+                start = mark + 1;
+                break;
+            case ' ':
+                if(width > 0 && bstr[start] != ' ' && mark - end > width ) {
+                    do_indent = true;
+                    end = mark + 1;
+                } else {
+                    write(SPACE, 1);
+                }
+                break;
+            default:
+                write(_str.withStart(mark), 1);
+                break;
+            }
+
+
+        }
+        write(SINGLE_QUOTE, 1);
     }
 }// Emitter
