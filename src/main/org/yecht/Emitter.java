@@ -4,6 +4,7 @@
 package org.yecht;
 
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  *
@@ -28,7 +29,9 @@ public class Emitter {
     public int level;
     public int indent;
     public long ignore_id;
-    Map markers, anchors, anchored;
+    Map<Long, Long> markers;
+    Map<Long, String> anchors;
+    Map<String, Object> anchored;
     int bufsize;
     byte[] buffer;
     int marker;
@@ -186,5 +189,79 @@ public class Emitter {
         this.output_handler.handle(this, this.buffer, check_room);
         this.bufpos += check_room;
         this.marker -= check_room;
+    }
+
+    private final static Pointer NEWLINE = Pointer.create("\n");
+    private final static Pointer THREE_DASHES = Pointer.create("--- ");
+    private final static Pointer QUESTION_MARK_SPACE = Pointer.create("? ");
+    private final static Pointer COLON_SPACE = Pointer.create(": ");
+
+    /*
+     * Start emitting from the given node, check for anchoring and then
+     * issue the callback to the emitter handler.
+     */
+    // syck_emit
+    public void emit(long n) {
+        int indent = 0;
+        int x = 0;
+        Level lvl = currentLevel();
+
+        if(stage == DocStage.open && (!headless || use_header)) {
+            if(use_version) {
+                String header = "--- %YAML:" + YAML.YAML_MAJOR + "." + YAML.YAML_MINOR + " ";
+                write(Pointer.create(header), header.length());
+
+            } else {
+                write(THREE_DASHES, 4);
+            }
+            stage = DocStage.processing;
+        }
+
+        if(lvl.spaces >= 0) {
+            indent = lvl.spaces + this.indent;
+        }
+        addLevel(indent, LevelStatus.open);
+        Level parent = lvl;
+        lvl = currentLevel();
+
+        boolean handle = true;
+
+        if(this.anchors != null && this.markers.containsKey(n)) {
+            long oid = this.markers.get(n);
+            if(this.anchors.containsKey(oid)) {
+                String anchor_name = this.anchors.get(oid);
+                if(this.anchored == null) {
+                    anchored = new HashMap<String, Object>();
+                }
+
+                if(!anchored.containsKey(anchor_name)) {
+                    String an = "&" + anchor_name + " ";
+                    if(parent.status == LevelStatus.map && parent.ncount % 2 == 1) {
+                        write(QUESTION_MARK_SPACE, 2);
+                        parent.status = LevelStatus.mapx;
+                    }
+
+                    write(Pointer.create(an), an.length());
+
+                    this.anchored.put(anchor_name, null);
+                    lvl.anctag = 1;
+                } else {
+                    String an = "*" + anchor_name;
+                    write(Pointer.create(an), an.length());
+                    handle = false;
+                }
+            }
+        }
+        
+        if(handle) {
+            this.emitter_handler.handle(this, n);
+        }
+
+        popLevel();
+        if(lvl_idx == 1) {
+            write(NEWLINE, 1);
+            this.headless = false;
+            this.stage = DocStage.open;
+        }
     }
 }// Emitter

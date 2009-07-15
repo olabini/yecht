@@ -25,6 +25,15 @@ public class Pointer {
         return p;
     }
 
+    public static Pointer create(String buf) {
+        Pointer p = new Pointer();
+        try {
+            p.buffer = buf.getBytes("ISO-8859-1");
+        } catch(Exception e) {}
+        p.start = 0;
+        return p;
+    }
+
     public void memcpy(byte[] toBuffer, int toIndex, int len) {
         System.arraycopy(buffer, start, toBuffer, toIndex, len);
     }

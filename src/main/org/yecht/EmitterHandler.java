@@ -8,5 +8,5 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public interface EmitterHandler {
-    void handle(Emitter e, Object data);
+    void handle(Emitter e, long data);
 }// EmitterHandler
