@@ -206,6 +206,10 @@ public class Emitter {
     private final static Pointer X = Pointer.create("x");
     private final static Pointer SINGLE_QUOTE = Pointer.create("'");
     private final static Pointer DOUBLE_QUOTE = Pointer.create("\"");
+    private final static Pointer PIPE = Pointer.create("|");
+    private final static Pointer PLUS = Pointer.create("+");
+    private final static Pointer MINUS = Pointer.create("-");
+    private final static Pointer GT = Pointer.create(">");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -568,7 +572,7 @@ public class Emitter {
 //             syck_emit_folded( e, force_width, keep_nl, str, len );
             break;
         case Literal:
-//             syck_emit_literal( e, keep_nl, str, len );
+            emitLiteral(keep_nl, _str, len);
             break;
         case Plain:
             write(_str, len);
@@ -724,5 +728,42 @@ public class Emitter {
             mark++;
         }
         write(DOUBLE_QUOTE, 1 );
+    }
+
+    // syck_emit_literal
+    public void emitLiteral(int keep_nl, Pointer _str, int len) {
+        byte[] bstr = _str.buffer;
+        int str = _str.start;
+
+        int mark = str;
+        int start = str;
+        int end = str;
+
+        write(PIPE, 1);
+        if(keep_nl == YAML.NL_CHOMP) {
+            write(MINUS, 1);
+        } else if(keep_nl == YAML.NL_KEEP) {
+            write(PLUS, 1);
+        }
+        emitIndent();
+        while(mark < str + len) {
+            if(bstr[mark] == '\n') {
+                end = mark;
+                if( bstr[start] != ' ' && bstr[start] != '\n' && bstr[end] != '\n' && bstr[end] != ' ' ) end += 1;
+                write(_str.withStart(start), end - start);
+                if(mark + 1 == str + len) {
+                    if(keep_nl != YAML.NL_KEEP) write(NEWLINE, 1);
+                } else {
+                    emitIndent();
+                }
+                start = mark + 1;
+            }
+            mark++;
+        }
+
+        end = str + len;
+        if( start < end ) {
+            write(_str.withStart(start), end - start);
+        }
     }
 }// Emitter
