@@ -200,7 +200,6 @@ public class Emitter {
     private final static Pointer BANG = Pointer.create("!");
     private final static Pointer BANG_SPACE = Pointer.create("! ");
     private final static Pointer TWO_BANGS = Pointer.create("!!");
-    private final static Pointer COLON_SPACE = Pointer.create(": ");
     private final static Pointer BACKSLASH = Pointer.create("\\");
     private final static Pointer ZERO = Pointer.create("0");
     private final static Pointer X = Pointer.create("x");
@@ -214,6 +213,9 @@ public class Emitter {
     private final static Pointer SQUARE_CLOSE = Pointer.create("]");
     private final static Pointer CURLY_OPEN = Pointer.create("{");
     private final static Pointer CURLY_CLOSE = Pointer.create("}");
+    private final static Pointer DASH_SPACE = Pointer.create("- ");
+    private final static Pointer COMMA_SPACE = Pointer.create(", ");
+    private final static Pointer COLON_SPACE = Pointer.create(": ");
 
     /*
      * Start emitting from the given node, check for anchoring and then
@@ -861,5 +863,87 @@ public class Emitter {
          } else {
              lvl.status = LevelStatus.map;
          }
+    }
+
+    // syck_emit_item
+    public void emitItem(long n) {
+        Level lvl = currentLevel();
+        switch(lvl.status) {
+        case seq: {
+            Level parent = parentLevel();
+            if(parent.status == LevelStatus.mapx && lvl.ncount == 0) {
+                if(parent.ncount % 2 == 0 && lvl.anctag == 0) {
+                    lvl.spaces = parent.spaces;
+                }
+            } else if(lvl.anctag == 0 && parent.status == LevelStatus.seq && lvl.ncount == 0) {
+                int spcs = (lvl.spaces - parent.spaces ) - 2;
+                if(spcs >= 0) {
+                    for(int i = 0; i < spcs; i++) {
+                        write(SPACE, 1);
+                    }
+                    write(DASH_SPACE, 2);
+                    break;
+                }
+            }
+            emitIndent();
+            write(DASH_SPACE, 2);
+            break;
+        }
+        case iseq: 
+            if(lvl.ncount > 0) {
+                write(COMMA_SPACE, 2);
+            }
+            break;
+        case map: {
+            Level parent = parentLevel();
+
+            if(lvl.anctag == 0 && parent.status == LevelStatus.seq && lvl.ncount == 0) {
+                int spcs = (lvl.spaces - parent.spaces) - 2;
+                if(spcs >= 0) {
+                    for(int i = 0; i < spcs; i++) {
+                        write(SPACE, 1);
+                    }
+                    break;
+                }
+            }
+
+            if(lvl.ncount % 2 == 0) {
+                emitIndent();
+            } else {
+                write(COLON_SPACE, 2);
+            }
+
+            break;
+        }
+        case mapx: {
+            if(lvl.ncount % 2 == 0) {
+                emitIndent();
+                lvl.status = LevelStatus.map;
+            } else {
+                if(lvl.spaces > 0) {
+                    byte[] spcs = new byte[lvl.spaces];
+                    java.util.Arrays.fill(spcs, (byte)' ');
+                    write(Pointer.create(spcs, 0), lvl.spaces);
+                }
+                write(COLON_SPACE, 2);
+            }
+            break;
+        }
+        case imap: {
+            if(lvl.ncount > 0) {
+                if(lvl.ncount % 2 == 0) {
+                    write(COMMA_SPACE, 2);
+                } else {
+                    write(COLON_SPACE, 2);
+                }
+            }
+            break;
+        }
+        default: break;
+        }
+
+        lvl.ncount++;
+
+        emit(n);
     }
 }// Emitter
