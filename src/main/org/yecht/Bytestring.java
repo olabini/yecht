@@ -10,7 +10,7 @@ package org.yecht;
  */
 public class Bytestring {
     int hash;
-    byte[] buffer;
+    public byte[] buffer;
     int length;
     int remaining;
     boolean printed;

@@ -16,6 +16,11 @@
     <fileset dir="${lib.dir}" includes="*.jar" excludes="yecht*.jar"/>
   </path>
 
+  <path id="ruby.build.classpath">
+    <fileset dir="${lib.dir}" includes="yecht*.jar"/>
+    <fileset dir="../jruby/lib" includes="jruby.jar"/>
+  </path>
+
   <patternset id="java.src.pattern">
     <include name="**/*.java"/>
   </patternset>
@@ -26,6 +31,7 @@
     <mkdir dir="${classes.dir}"/>
     <mkdir dir="${yecht.classes.dir}"/>
     <mkdir dir="${test.classes.dir}"/>
+    <mkdir dir="${ruby.classes.dir}"/>
   </target>
 
   <target name="re2j" depends="prepare" description="Standalone target that generates all our re2j based source files. Requires re2j to be on the path">
@@ -103,6 +109,14 @@
         <attribute name="Built-By" value="${user.name}"/>
       </manifest>
     </jar>
+  </target>
+
+  <target name="ext-ruby-compile" depends="jar" description="Create the JRuby extensions. Requires JRuby to be on the classpath, or in an easy to find place">
+    <javac destdir="${ruby.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
+      <classpath refid="ruby.build.classpath"/>
+      <src path="${ruby.src.dir}"/>
+      <patternset refid="java.src.pattern"/>
+    </javac>
   </target>
 	
   <target name="dist-bin" depends="jar">

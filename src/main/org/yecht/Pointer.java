@@ -14,6 +14,11 @@ public class Pointer {
     private Pointer() {
     }
 
+    private final static byte[] emptyBuffer = new byte[0];
+    public static Pointer empty() {
+        return create(emptyBuffer, 0);
+    }
+
     public static Pointer nullPointer() {
         return new Pointer();
     }
