@@ -36,6 +36,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
 
    public TokenScanner(Parser parser) {
      this.parser = parser;
+     yylex();
    }
 
    public Object getLVal() {
@@ -43,8 +44,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    public int currentToken() {
-     if(currentToken == -1)
-         return yylex();
      return currentToken;
    }
 

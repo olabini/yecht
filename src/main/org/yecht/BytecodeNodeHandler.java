@@ -8,7 +8,7 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public class BytecodeNodeHandler implements NodeHandler {
-    private static byte[] bytes(String s) {
+    public static byte[] bytes(String s) {
         try {
             return s.getBytes("ISO-8859-1");
         } catch(Exception e) {

@@ -1,4 +1,3 @@
 rubyext.c
 
 emitter.c  (emitter parts)
-syck.h  (emitter parts

@@ -12,6 +12,7 @@ public class BytecodeScanner implements YAMLGrammarTokens, Scanner {
 
    public BytecodeScanner(Parser parser) {
      this.parser = parser;
+     yylex();
    }
 
    public Object getLVal() {
