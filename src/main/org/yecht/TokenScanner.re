@@ -93,7 +93,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    private void RETURN_YAML_BLOCK(QuotedString q, int blockType, int nlDoWhat) {
-       Node n = Node.allocStr();
+       Node n = parser.allocStr();
        if(parser.taguri_expansion) {
            n.type_id = Parser.taguri(YAML.DOMAIN, "str");
        } else {
@@ -200,7 +200,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    public void RETURN_IMPLICIT(QuotedString q) {
-       Node n = Node.allocStr();
+       Node n = parser.allocStr();
        parser.cursor = parser.token;
        Data.Str dd = (Data.Str)n.data;
        dd.ptr = Pointer.create(q.str, 0);
@@ -781,7 +781,7 @@ YINDENT             {
                     }
 
 ( "'" | NULL )      {   
-                        Node n = Node.allocStr();
+                        Node n = parser.allocStr();
                         lvl = parser.currentLevel();
                         if(lvl.status == LevelStatus.str) {
                             parser.popLevel();
@@ -877,7 +877,7 @@ YINDENT             {
                     }
 
 ( "\"" | NULL )     {   
-                        Node n = Node.allocStr();
+                        Node n = parser.allocStr();
                         lvl = parser.currentLevel();
 
                         if(lvl.status == LevelStatus.str) {

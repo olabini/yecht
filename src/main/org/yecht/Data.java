@@ -9,11 +9,11 @@ package org.yecht;
  */
 public abstract class Data {
     public static class Map extends Data {
-        MapStyle style;
-        long[] keys;
-        long[] values;
-        int capa;
-        int idx;
+        public MapStyle style;
+        public long[] keys;
+        public long[] values;
+        public int capa;
+        public int idx;
 
         public String toString() {
             return "{}";
@@ -21,10 +21,10 @@ public abstract class Data {
     }
 
     public static class Seq extends Data {
-        SeqStyle style;
-        long[] items;
-        int capa;
-        int idx;
+        public SeqStyle style;
+        public long[] items;
+        public int capa;
+        public int idx;
 
         public String toString() {
             return "[]";
@@ -32,9 +32,9 @@ public abstract class Data {
     }
 
     public static class Str extends Data {
-        ScalarStyle style;
-        Pointer ptr;
-        int len;
+        public ScalarStyle style;
+        public Pointer ptr;
+        public int len;
 
         public String toString() {
             return "\"" + new String(ptr.buffer, ptr.start, len) + "\"";

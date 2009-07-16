@@ -2,8 +2,11 @@ package org.yecht.ruby;
 
 import org.yecht.BytecodeNodeHandler;
 import org.yecht.Bytestring;
+import org.yecht.Data;
 import org.yecht.IoStrRead;
 import org.yecht.JechtIO;
+import org.yecht.MapPart;
+import org.yecht.Node;
 import org.yecht.Parser;
 import org.yecht.Pointer;
 import org.yecht.ImplicitScanner;
@@ -24,6 +27,7 @@ import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.util.ByteList;
+import org.jruby.util.TypeConverter;
 
 public class YechtYAML {
     public static class RubyIoStrRead implements IoStrRead {
@@ -52,6 +56,12 @@ public class YechtYAML {
             buf.buffer[buf.start+len] = 0;
             return len;
         }
+    }
+
+    // yaml_org_handler
+    public static int orgHandler(Node n, IRubyObject ref) {
+        // TODO: implement
+        return -1;
     }
 
     // syck_parser_assign_io
@@ -235,8 +245,86 @@ public class YechtYAML {
 
         }        
 
+        // syck_resolver_node_import
+        @JRubyMethod
+        public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+            final Ruby runtime = self.getRuntime();
+            final ThreadContext ctx = runtime.getCurrentContext();
+            org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
+            Parser parser = n.parser;
+            IRubyObject obj = null;
+            switch(n.kind) {
+            case Str:
+                Data.Str dd = (Data.Str)n.data;
+                obj = RubyString.newStringShared(runtime, dd.ptr.buffer, dd.ptr.start, dd.len);
+                break;
+            case Seq:
+                Data.Seq ds = (Data.Seq)n.data;
+                obj = RubyArray.newArray(runtime, ds.idx);
+                for(int i = 0; i < ds.idx; i++) {
+                    ((RubyArray)obj).store(i, (IRubyObject)parser.lookupSym(n.seqRead(i)));
+                }
+                break;
+            case Map:
+                Data.Map dm = (Data.Map)n.data;
+                obj = RubyHash.newHash(runtime);
+                RubyClass cMergeKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey"));
+                RubyClass cDefaultKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey"));
+                RubyClass cHash = runtime.getHash();
+                RubyClass cArray = runtime.getArray();
+                
+                for(int i = 0; i < dm.idx; i++) {
+                    IRubyObject k = (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Key, i));
+                    IRubyObject v = (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Value, i));
+                    boolean skip_aset = false;
+                    
+                    if(cMergeKey.isInstance(k)) {
+                        if(cHash.isInstance(v)) {
+                            IRubyObject dup = v.callMethod(ctx, "dup");
+                            dup.callMethod(ctx, "update", obj);
+                            obj = dup;
+                            skip_aset = true;
+                        } else if(cArray.isInstance(v)) {
+                            IRubyObject end = ((RubyArray)v).pop(ctx);
+                            if(cHash.isInstance(end)) {
+                                final IRubyObject dup = end.callMethod(ctx, "dup");
+                                v = ((RubyArray)v).reverse();
+                                ((RubyArray)v).append(obj);
 
-//     rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
+                                RubyEnumerable.callEach(runtime, ctx, v, new BlockCallback() {
+                                        // syck_merge_i
+                                        public IRubyObject call(ThreadContext _ctx, IRubyObject[] largs, Block blk) {
+                                            IRubyObject entry = largs[0];
+                                            IRubyObject tmp = null;
+                                            if(!(tmp = TypeConverter.convertToTypeWithCheck(entry, runtime.getHash(), "to_hash")).isNil()) {
+                                                dup.callMethod(_ctx, "update", tmp);
+                                            }
+                                            return runtime.getNil();
+                                        }
+                                    });
+
+                                obj = dup;
+                                skip_aset = true;
+                            }
+                        }
+                    } else if(cDefaultKey.isInstance(k)) {
+                        obj.callMethod(ctx, "default=", v);
+                        skip_aset = true;
+                    }
+                    
+                    if(!skip_aset) {
+                        ((RubyHash)obj).fastASet(k, v);
+                    }
+                }
+                break;
+            }
+            
+            if(n.type_id != null) {
+                obj = self.callMethod(ctx, "transfer", new IRubyObject[]{runtime.newString(n.type_id), obj});
+            }
+
+            return obj;
+        }
 
         // syck_resolver_tagurize
         @JRubyMethod

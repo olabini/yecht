@@ -8,13 +8,14 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public class Node {
-    long id = 0;
-    KindTag kind;
-    String type_id;
-    String anchor;
-    Data data;
-    Object shortcut;
-    
+    public long id = 0;
+    public KindTag kind;
+    public String type_id;
+    public String anchor;
+    public Data data;
+    public Object shortcut;
+    public Parser parser;
+
     public String toString() {
         switch(kind) {
         case Str:
@@ -25,58 +26,6 @@ public class Node {
             return "Map[id=" + id +", type=" + type_id +", val="+data+"]";
         }
         return "other";
-    }
-
-
-    // syck_alloc_map
-    public static Node allocMap() {
-        Data.Map m = new Data.Map();
-        m.style = MapStyle.None;
-        m.idx = 0;
-        m.capa = YAML.ALLOC_CT;
-        m.keys = new long[m.capa];
-        m.values = new long[m.capa];
-        
-        Node n = KindTag.Map.allocNode();
-        n.data = m;
-        return n;
-    }
-
-    // syck_alloc_seq
-    public static Node allocSeq() {
-        Data.Seq s = new Data.Seq();
-        s.style = SeqStyle.None;
-        s.idx = 0;
-        s.capa = YAML.ALLOC_CT;
-        s.items = new long[s.capa];
-        
-        Node n = KindTag.Seq.allocNode();
-        n.data = s;
-        return n;
-    }
-
-    // syck_alloc_str
-    public static Node allocStr() {
-        Data.Str s = new Data.Str();
-        s.style = ScalarStyle.None;
-        s.ptr = Pointer.nullPointer();
-        s.len = 0;
-        
-        Node n = KindTag.Str.allocNode();
-        n.data = s;
-        return n;
-    }
-
-    // syck_new_str
-    // syck_new_str2
-    public static Node newStr(Pointer str, int len, ScalarStyle style) {
-        Node n = allocStr();
-        Data.Str s = (Data.Str)n.data;
-        s.ptr = Pointer.create(new byte[len], 0);
-        s.len = len;
-        s.style = style;
-        str.memcpy(s.ptr, len);
-        return n;
     }
 
     // syck_replace_str
@@ -107,13 +56,6 @@ public class Node {
     // syck_str_read
     public Pointer strRead() {
         return ((Data.Str)data).ptr;
-    }
-
-    // syck_new_map
-    public static Node newMap(long key, long value) {
-        Node n = allocMap();
-        n.mapAdd(key, value);
-        return n;
     }
 
     // syck_map_empty
@@ -189,13 +131,6 @@ public class Node {
         } else {
             return m.values[idx];
         }
-    }
-
-    // syck_new_seq
-    public static Node newSeq(long value) {
-        Node n = allocSeq();
-        n.seqAdd(value);
-        return n;
     }
 
     // syck_seq_empty

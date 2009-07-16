@@ -239,7 +239,7 @@ top_imp_seq     : YAML_TRANSFER indent_sep in_implicit_seq
 
 in_implicit_seq : basic_seq
                 {
-                    $$ = Node.newSeq(((Long)$1).longValue());
+                    $$ = parser.newSeq(((Long)$1).longValue());
                 }
 				| in_implicit_seq indent_sep basic_seq
 				{ 
@@ -261,13 +261,13 @@ inline_seq		: '[' in_inline_seq ']'
                 }
 				| '[' ']'
                 { 
-                    $$ = Node.allocSeq();
+                    $$ = parser.allocSeq();
                 }
                 ;
 
 in_inline_seq   : inline_seq_atom
                 {
-                    $$ = Node.newSeq( parser.addNode((Node)$1));
+                    $$ = parser.newSeq( parser.addNode((Node)$1));
                 }
                 | in_inline_seq ',' inline_seq_atom
 				{ 
@@ -344,7 +344,7 @@ complex_value   : atom_or_empty
 
 complex_mapping : complex_key ':' complex_value
                 {
-                    $$ = Node.newMap( 
+                    $$ = parser.newMap( 
                         parser.addNode( (Node)$1 ), 
                         parser.addNode( (Node)$3 ) );
                 }
@@ -364,7 +364,7 @@ in_implicit_map : complex_mapping
                 {
                     if ( ((Node)$1).shortcut == null )
                     {
-                        ((Node)$1).shortcut = Node.newSeq( ((Long)$3).longValue() );
+                        ((Node)$1).shortcut = parser.newSeq( ((Long)$3).longValue() );
                     }
                     else
                     {
@@ -390,7 +390,7 @@ in_implicit_map : complex_mapping
  */
 basic_mapping	: atom ':' atom_or_empty
                 {
-                    $$ = Node.newMap( 
+                    $$ = parser.newMap( 
                         parser.addNode( (Node)$1 ), 
                         parser.addNode( (Node)$3 ) );
                 }
@@ -402,7 +402,7 @@ inline_map		: '{' in_inline_map '}'
                 }
           		| '{' '}'
                 {
-                    $$ = Node.allocMap();
+                    $$ = parser.allocMap();
                 }
                 ;
          
@@ -418,7 +418,7 @@ in_inline_map	: inline_map_atom
 inline_map_atom : atom
                 {
                     Node n = NULL_NODE( parser );
-                    $$ = Node.newMap( 
+                    $$ = parser.newMap( 
                         parser.addNode( (Node)$1 ), 
                         parser.addNode( n ) );
                 }
@@ -435,7 +435,7 @@ inline_map_atom : atom
      }
 
 public static Node NULL_NODE(Parser parser) {
-    Node n = Node.newStr(Pointer.create(new byte[0], 0), 0, ScalarStyle.Plain);
+    Node n = parser.newStr(Pointer.create(new byte[0], 0), 0, ScalarStyle.Plain);
     if(parser.taguri_expansion) {
       n.type_id = Parser.taguri(YAML.DOMAIN, "null");
     } else {
