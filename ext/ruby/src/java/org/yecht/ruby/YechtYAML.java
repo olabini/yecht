@@ -434,17 +434,58 @@ public class YechtYAML {
     }
 
     public static class YParser {
+        public static class Extra {
+            public IRubyObject data;
+            public IRubyObject proc;
+            public IRubyObject resolver;
+            public int taint;
+        }
+
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_parser_s_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-                    // TODO: implement
-                    return null;
+                    Parser parser = Parser.newParser();
+                    parser.bonus = new Extra();
+                    IRubyObject pobj = new RubyObject(runtime, klass);
+                    pobj.dataWrapStruct(parser);
+                    parser.setRootOnError(parser.addSym(runtime.getNil()));
+                    return pobj;
                 }
             };
 
-//     rb_define_method(cParser, "initialize", syck_parser_initialize, -1 );
-//     rb_define_method(cParser, "bufsize=", syck_parser_bufsize_set, 1 );
-//     rb_define_method(cParser, "bufsize", syck_parser_bufsize_get, 0 );
+        @JRubyMethod(optional = 1)
+        public static IRubyObject initialize(IRubyObject self, IRubyObject[] args) {
+            IRubyObject options = null;
+            if(args.length == 0) {
+                options = RubyHash.newHash(self.getRuntime());
+            } else {
+                options = args[0].convertToHash();
+            }
+            self.getInstanceVariables().setInstanceVariable("@options", options);
+            self.getInstanceVariables().setInstanceVariable("@input", self.getRuntime().getNil());
+            self.getInstanceVariables().setInstanceVariable("@resolver", self.getRuntime().getNil());
+
+            return self;
+        }
+        
+        // syck_parser_bufsize_set
+        @JRubyMethod(name="bufsize=")
+        public static IRubyObject bufsize_set(IRubyObject self, IRubyObject size) {
+            if(size.respondsTo("to_i")) {
+                int n = RubyNumeric.fix2int(size.callMethod(self.getRuntime().getCurrentContext(), "to_i"));
+                Parser p = (Parser)self.dataGetStruct();
+                p.bufsize = n;
+            }
+            return self;
+        }        
+
+        // syck_parser_bufsize_get
+        @JRubyMethod
+        public static IRubyObject bufsize(IRubyObject self) {
+            Parser p = (Parser)self.dataGetStruct();
+            return self.getRuntime().newFixnum(p.bufsize);
+        }        
+
 //     rb_define_method(cParser, "load", syck_parser_load, -1);
 //     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
 //     rb_define_method(cParser, "set_resolver", syck_parser_set_resolver, 1);

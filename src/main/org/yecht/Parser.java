@@ -20,7 +20,7 @@ public class Parser {
     BadAnchorHandler bad_anchor_handler = new BadAnchorHandler.Default();
     ParserInput input_type;
     IOType io_type;
-    int bufsize;
+    public int bufsize;
     Pointer buffer;
     int linectptr, lineptr, token, toktmp, cursor = -1, marker, limit;
     int linect;
@@ -33,7 +33,7 @@ public class Parser {
     Level[] levels;
     int lvl_idx;
     int lvl_capa;
-    Object bonus;
+    public Object bonus;
 
     // syck_parser_reset_levels
     public void resetLevels() {
