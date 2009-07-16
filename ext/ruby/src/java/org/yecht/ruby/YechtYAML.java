@@ -1,15 +1,19 @@
 package org.yecht.ruby;
 
+import org.yecht.BadAnchorHandler;
 import org.yecht.BytecodeNodeHandler;
 import org.yecht.Bytestring;
 import org.yecht.Data;
 import org.yecht.Emitter;
 import org.yecht.EmitterHandler;
+import org.yecht.ErrorHandler;
 import org.yecht.IoStrRead;
 import org.yecht.JechtIO;
 import org.yecht.MapPart;
 import org.yecht.Node;
+import org.yecht.NodeHandler;
 import org.yecht.Parser;
+import org.yecht.ParserInput;
 import org.yecht.OutputHandler;
 import org.yecht.Pointer;
 import org.yecht.ImplicitScanner;
@@ -71,9 +75,70 @@ public class YechtYAML {
         return false;
     }
 
+    public static class RubyLoadHandler implements NodeHandler {
+        private Ruby runtime;
+
+        public RubyLoadHandler(Ruby runtime) {
+            this.runtime = runtime;
+        }
+
+        // rb_syck_load_handler
+        public long handle(Parser p, org.yecht.Node n) {
+            // TODO: implement
+            return -1;
+        }
+    }
+
+    public static class RubyErrHandler implements ErrorHandler {
+        private Ruby runtime;
+
+        public RubyErrHandler(Ruby runtime) {
+            this.runtime = runtime;
+        }
+
+        // rb_syck_err_handler
+        public void handle(Parser p, String msg) {
+            // TODO: implement
+        }
+    }
+
+    public static class RubyBadAnchorHandler implements BadAnchorHandler {
+        private Ruby runtime;
+
+        public RubyBadAnchorHandler(Ruby runtime) {
+            this.runtime = runtime;
+        }
+
+        // rb_syck_bad_anchor_handler
+        public org.yecht.Node handle(Parser p, String anchor) {
+            // TODO: implement
+            return null;
+        }
+    }
+
     // syck_set_model
     public static void setModel(IRubyObject p, IRubyObject input, IRubyObject model) {
-        // TODO: implement
+        Ruby runtime = p.getRuntime();
+        Parser parser = (Parser)p.dataGetStruct();
+        parser.handler(new RubyLoadHandler(runtime));
+        if(model == runtime.newSymbol("Generic")) {
+            p.callMethod(runtime.getCurrentContext(), "set_resolver", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("GenericResolver"));
+        }
+        parser.implicitTyping(true);
+        parser.taguriExpansion(true);
+
+        if(input.isNil()) {
+            input = p.getInstanceVariables().getInstanceVariable("@input");
+        }
+
+        if(input == runtime.newSymbol("bytecode")) {
+            parser.setInputType(ParserInput.Bytecode_UTF8);
+        } else {
+            parser.setInputType(ParserInput.YAML_UTF8);
+        }
+
+        parser.errorHandler(new RubyErrHandler(runtime));
+        parser.badAnchorHandler(new RubyBadAnchorHandler(runtime));
     }
 
     // syck_parser_assign_io
