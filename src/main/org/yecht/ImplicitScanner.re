@@ -41,9 +41,11 @@ public class ImplicitScanner {
 
     // syck_match_implicit
     public static String matchImplicit(Pointer ptr, int len) {
-        byte[] data = ptr.buffer;
-        int cursor = ptr.start;
-        int limit = cursor+len;
+        byte[] data = new byte[len + 1];
+        System.arraycopy(ptr.buffer, ptr.start, data, 0, len);
+        data[len] = 0;
+        int cursor = 0;
+        int limit = len;
         int marker = -1;       
 
 /*!re2j

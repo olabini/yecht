@@ -447,7 +447,7 @@ public class Emitter {
                 if(len - i >= 3 && cursorb[cursor+i+1] == '-' && cursorb[cursor+i+2] == '-' && cursorb[cursor+i+3] == '-' ) {
                     flags |= SCAN_DOCSEP;
                 }
-                if(cursorb[cursor+i+1] == ' ' || cursorb[cursor+i+1] == '\t') {
+                if(i+1 < len && (cursorb[cursor+i+1] == ' ' || cursorb[cursor+i+1] == '\t')) {
                     flags |= SCAN_INDENTED;
                 }
                 if(req_width > 0 && (i - start) > req_width) {
@@ -462,14 +462,14 @@ public class Emitter {
                 flags |= SCAN_FLOWSEQ;
             } else if(ci == '}') {
                 flags |= SCAN_FLOWMAP;
-            } else if((ci == ' ' && cursorb[cursor+i+1] == '#' ) ||
-                      (ci == ':' && (cursorb[cursor+i+1] == ' ' || 
-                                     cursorb[cursor+i+1] == '\n' || 
-                                     i == len - 1 ))) {
+            } else if(((ci == ' ' && (i+1<len && cursorb[cursor+i+1] == '#') ) ||
+                       (ci == ':' && ((i+1<len && cursorb[cursor+i+1] == ' ') || 
+                                      (i+1<len && cursorb[cursor+i+1] == '\n') || 
+                                      i == len - 1 )))) {
                 flags |= SCAN_INDIC_C;
-            } else if(ci == ',' && (cursorb[cursor+i+1] == ' ' || 
-                                    cursorb[cursor+i+1] == '\n' || 
-                                    i == len - 1 )) {
+            } else if(ci == ',' && ((i == len - 1 ||
+                                     cursorb[cursor+i+1] == ' ' || 
+                                     cursorb[cursor+i+1] == '\n'))) {
                 flags |= SCAN_FLOWMAP;
                 flags |= SCAN_FLOWSEQ;
             }
