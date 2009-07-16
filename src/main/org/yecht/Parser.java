@@ -21,9 +21,9 @@ public class Parser {
     ParserInput input_type;
     IOType io_type;
     public int bufsize;
-    Pointer buffer;
-    int linectptr, lineptr, token, toktmp, cursor = -1, marker, limit;
-    int linect;
+    public Pointer buffer;
+    public int linectptr, lineptr, token, toktmp, cursor = -1, marker, limit;
+    public int linect;
     int last_token;
     int force_token;
     public boolean eof;

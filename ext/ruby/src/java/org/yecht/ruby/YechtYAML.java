@@ -84,8 +84,32 @@ public class YechtYAML {
 
         // rb_syck_load_handler
         public long handle(Parser p, org.yecht.Node n) {
-            // TODO: implement
-            return -1;
+            YParser.Extra bonus = (YParser.Extra)p.bonus;
+            IRubyObject resolver = bonus.resolver;
+            if(resolver.isNil()) {
+                resolver = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver");
+            }
+            
+            IRubyObject _n = new RubyObject(runtime, (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Node"));
+            _n.dataWrapStruct(n);
+            
+            IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
+            if(n.id > 0 && !obj.isNil()) {
+                n.id = runtime.getObjectSpace().idOf(obj);
+                n.shortcut = obj;
+            }
+
+            if(bonus.taint) {
+                obj.setTaint(true);
+            }
+
+            if(bonus.proc != null) {
+                bonus.proc.callMethod(runtime.getCurrentContext(), "call", obj);
+            }
+            
+            ((RubyHash)bonus.data).fastASet(((RubyHash)bonus.data).rb_size(), obj);
+
+            return n.id;
         }
     }
 
@@ -98,7 +122,15 @@ public class YechtYAML {
 
         // rb_syck_err_handler
         public void handle(Parser p, String msg) {
-            // TODO: implement
+            int endl = p.cursor;
+            while(p.buffer.buffer[endl] != 0 && p.buffer.buffer[endl] != '\n') {
+                endl++;
+            }
+            try {
+                String line = new String(p.buffer.buffer, p.lineptr, endl-p.lineptr, "ISO-8859-1");
+                String m1 = msg + " on line " + p.linect + ", col " + (p.cursor-p.lineptr) + ": `" + line + "'";
+                throw runtime.newArgumentError(m1);
+            } catch(java.io.UnsupportedEncodingException e) {}
         }
     }
 
@@ -110,9 +142,13 @@ public class YechtYAML {
         }
 
         // rb_syck_bad_anchor_handler
-        public org.yecht.Node handle(Parser p, String anchor) {
-            // TODO: implement
-            return null;
+        public org.yecht.Node handle(Parser p, String a) {
+            IRubyObject anchor_name = runtime.newString(a);
+            IRubyObject nm = runtime.newString("name");
+            ObjectSpace os = runtime.getObjectSpace();
+            org.yecht.Node badanc = org.yecht.Node.newMap(os.idOf(nm), os.idOf(anchor_name));
+            badanc.type_id = "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias";
+            return badanc;
         }
     }
 
