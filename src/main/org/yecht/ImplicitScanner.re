@@ -138,6 +138,10 @@ ANY                 {   return "str"; }
         try {
           data = type_id.getBytes("ISO8859-1");
         } catch(Exception e) {}
+        byte[] dx = new byte[data.length+1];
+        System.arraycopy(data, 0, dx, 0, data.length);
+        dx[data.length] = 0;
+        data = dx;
         int cursor = 0;
         int limit = data.length;
         int marker = -1;

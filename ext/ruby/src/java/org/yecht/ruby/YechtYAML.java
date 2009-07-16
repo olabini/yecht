@@ -451,7 +451,7 @@ public class YechtYAML {
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
 
-        if(input.isNil()) {
+        if(input == null || input.isNil()) {
             input = p.getInstanceVariables().getInstanceVariable("@input");
         }
 
