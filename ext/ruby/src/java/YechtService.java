@@ -85,8 +85,8 @@ public class YechtService implements BasicLibraryService {
         cOut.defineAnnotatedMethods(YechtYAML.Out.class);
         cOut.addReadWriteAttribute(ctx, "emitter");
 
-        RubyClass cEmitter = rb_yecht.defineClassUnder("Emitter", runtime.getObject(), YechtYAML.Emitter.Allocator);
-        cEmitter.defineAnnotatedMethods(YechtYAML.Emitter.class);
+        RubyClass cEmitter = rb_yecht.defineClassUnder("Emitter", runtime.getObject(), YechtYAML.YEmitter.Allocator);
+        cEmitter.defineAnnotatedMethods(YechtYAML.YEmitter.class);
         cEmitter.addReadWriteAttribute(ctx, "level");
 
         return true;

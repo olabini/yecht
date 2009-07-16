@@ -41,7 +41,7 @@ public class Emitter {
     Level[] levels;
     int lvl_idx;
     int lvl_capa;
-    Object bonus;
+    public Object bonus;
 
     // syck_new_emitter
     public Emitter() {

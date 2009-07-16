@@ -3,11 +3,14 @@ package org.yecht.ruby;
 import org.yecht.BytecodeNodeHandler;
 import org.yecht.Bytestring;
 import org.yecht.Data;
+import org.yecht.Emitter;
+import org.yecht.EmitterHandler;
 import org.yecht.IoStrRead;
 import org.yecht.JechtIO;
 import org.yecht.MapPart;
 import org.yecht.Node;
 import org.yecht.Parser;
+import org.yecht.OutputHandler;
 import org.yecht.Pointer;
 import org.yecht.ImplicitScanner;
 import org.yecht.MapStyle;
@@ -989,12 +992,51 @@ public class YechtYAML {
         }
     }
 
-    public static class Emitter {
+    public static class RubyEmitterHandler implements EmitterHandler { 
+        private Ruby runtime;
+
+        public RubyEmitterHandler(Ruby runtime) {
+            this.runtime = runtime;
+        }
+
+        // rb_syck_emitter_handler
+        public void handle(Emitter e, long data) {
+            // TODO: implement
+        }
+    }
+
+    public static class RubyOutputHandler implements OutputHandler {
+        private Ruby runtime;
+
+        public RubyOutputHandler(Ruby runtime) {
+            this.runtime = runtime;
+        }
+
+        // rb_syck_output_handler
+        public void handle(Emitter e, byte[] str, int len) {
+            // TODO: implement
+        }
+    }
+
+    public static class YEmitter {
+        public static class Extra {
+            public IRubyObject oid;
+            public IRubyObject data;
+            public IRubyObject port;
+        }
+
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_emitter_s_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-                    // TODO: implement
-                    return null;
+                    Emitter emitter = new Emitter();
+                    emitter.bonus = new Extra();
+                    IRubyObject pobj = new RubyObject(runtime, klass);
+                    pobj.dataWrapStruct(emitter);
+                    emitter.handler(new RubyEmitterHandler(runtime));
+                    emitter.outputHandler(new RubyOutputHandler(runtime));
+                    
+                    pobj.getInstanceVariables().setInstanceVariable("@out", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Out").callMethod(runtime.getCurrentContext(), "new", pobj));
+                    return pobj;
                 }
             };
 
