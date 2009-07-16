@@ -69,10 +69,112 @@ public class YechtYAML {
             return len;
         }
     }
+
+    private static int extractInt(byte[] buff, int p, int pend) {
+        int len = 0;
+        while(Character.isDigit((char)buff[p+len]) && (p+len) < pend) {
+            len++;
+        }
+        try {
+            return Integer.parseInt(new String(buff, p, len, "ISO-8859-1"));
+        } catch(java.io.UnsupportedEncodingException e) {return -1;}
+    }
     
     // rb_syck_mktime
     public static IRubyObject makeTime(Ruby runtime, Pointer str, int len) {
-        // TODO: implement
+        int ptr = str.start;
+        int pend = ptr + len;
+        IRubyObject year = runtime.newFixnum(0);
+        IRubyObject mon = runtime.newFixnum(0);
+        IRubyObject day = runtime.newFixnum(0);
+        IRubyObject hour = runtime.newFixnum(0);
+        IRubyObject min = runtime.newFixnum(0);
+        IRubyObject sec = runtime.newFixnum(0);
+        long usec = 0;
+
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            year = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 4;
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            while(!Character.isDigit((char)str.buffer[ptr]) && ptr < pend) ptr++;
+            mon = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 2;
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            while(!Character.isDigit((char)str.buffer[ptr]) && ptr < pend) ptr++;
+            day = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 2;
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            while(!Character.isDigit((char)str.buffer[ptr]) && ptr < pend) ptr++;
+            hour = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 2;
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            while(!Character.isDigit((char)str.buffer[ptr]) && ptr < pend) ptr++;
+            min = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 2;
+        if(str.buffer[ptr] != 0 && ptr < pend) {
+            while(!Character.isDigit((char)str.buffer[ptr]) && ptr < pend) ptr++;
+            sec = runtime.newFixnum(extractInt(str.buffer, ptr, pend));
+        }
+
+        ptr += 2;
+        if(ptr < pend && str.buffer[ptr] == '.') {
+            int end = ptr + 1;
+            while(Character.isDigit((char)str.buffer[end]) && end < pend) end++;
+            byte[] padded = new byte[]{'0', '0', '0', '0', '0', '0'};
+            System.arraycopy(str.buffer, ptr+1, padded, 0, end - (ptr-1));
+            try {
+                usec = Long.parseLong(new String(padded, 0, 6, "ISO-8859-1"));
+            } catch(Exception e) {}
+        } else {
+            usec = 0;
+        }
+
+        while(ptr < pend && str.buffer[ptr] != 'Z' && str.buffer[ptr] != '+' && str.buffer[ptr] != '-' && str.buffer[ptr] != 0) {
+            ptr++;
+        }
+
+        if(ptr < pend && (str.buffer[ptr] == '-' || str.buffer[ptr] == '+')) {
+            int lenx = 1;
+            while(ptr+lenx < pend && Character.isDigit((char)str.buffer[ptr+lenx])) {
+                lenx++;
+            }
+            if(str.buffer[ptr] == '+') {
+                ptr++;
+                lenx--;
+            }
+            try {
+                long tz_offset = Long.parseLong(new String(str.buffer, ptr, lenx, "ISO-8859-1")) * 3600;
+                ptr+=lenx;
+                while(ptr < pend && str.buffer[ptr] != ':' && str.buffer[ptr] != 0 ) {
+                    ptr++;
+                }
+                if(ptr < pend && str.buffer[ptr] == ':') {
+                    ptr++;
+                    if(tz_offset < 0) {
+                        tz_offset -= extractInt(str.buffer, ptr, pend) * 60;
+                    } else {
+                        tz_offset += extractInt(str.buffer, ptr, pend) * 60;
+                    }
+                }
+
+                IRubyObject time = runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec});
+                long tmp = RubyNumeric.num2long(time.callMethod(runtime.getCurrentContext(), "to_i")) - tz_offset;
+                return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "at", new IRubyObject[]{runtime.newFixnum(tmp), runtime.newFixnum(usec)});
+            } catch(Exception e) {}
+        } else {
+            // Make UTC time
+            return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec,runtime.newFixnum(usec)});
+        }
         return null;
     }
 

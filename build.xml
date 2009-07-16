@@ -118,7 +118,22 @@
       <patternset refid="java.src.pattern"/>
     </javac>
   </target>
-	
+
+  <target name="ext-ruby-jar" depends="ext-ruby-compile" description="Create the yecht-ruby.jar file">
+    <jar destfile="${lib.dir}/yecht-ruby-0.0.1.jar">
+      <fileset dir="${yecht.classes.dir}">
+        <include name="**/*.class"/>
+        <include name="**/*.properties"/>
+      </fileset>
+      <fileset dir="${ruby.classes.dir}">
+        <include name="**/*.class"/>
+      </fileset>
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+      </manifest>
+    </jar>
+  </target>
+
   <target name="dist-bin" depends="jar">
     <tar destfile="${release.dir}/yecht-bin-0.0.1.tar.gz" compression="gzip">
       <tarfileset dir="." prefix="yecht-0.0.1">
