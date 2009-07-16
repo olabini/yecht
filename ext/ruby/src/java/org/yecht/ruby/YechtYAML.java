@@ -917,7 +917,14 @@ public class YechtYAML {
             self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
             return self;
         }
-//TODO:     rb_define_method( cYObject, "yaml_initialize", syck_yobject_initialize, 2);
+
+        // syck_yobject_initialize
+        @JRubyMethod
+        public static IRubyObject yaml_initialize(IRubyObject self, IRubyObject klass, IRubyObject ivars) {
+            self.getInstanceVariables().setInstanceVariable("@class", klass);
+            self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
+            return self;
+        }
     }
 
     public static class BadAlias {
@@ -945,9 +952,41 @@ public class YechtYAML {
             return self;
         }
 
-//TODO:     rb_define_method( cOut, "map", syck_out_map, -1 );
-//TODO:     rb_define_method( cOut, "seq", syck_out_seq, -1 );
-//TODO:     rb_define_method( cOut, "scalar", syck_out_scalar, -1 );
+        // syck_out_map
+        @JRubyMethod(required = 1, optional = 1, frame = true)
+        public static IRubyObject map(IRubyObject self, IRubyObject[] args, Block block) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            IRubyObject type_id = args[0];
+            IRubyObject style = args.length == 1 ? runtime.getNil() : args[1];
+            IRubyObject map = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map").callMethod(ctx, "new", new IRubyObject[]{type_id, RubyHash.newHash(runtime), style});
+            block.yield(ctx, map);
+            return map;
+        }
+
+        // syck_out_seq
+        @JRubyMethod(required = 1, optional = 1, frame = true)
+        public static IRubyObject seq(IRubyObject self, IRubyObject[] args, Block block) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            IRubyObject type_id = args[0];
+            IRubyObject style = args.length == 1 ? runtime.getNil() : args[1];
+            IRubyObject seq = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq").callMethod(ctx, "new", new IRubyObject[]{type_id, RubyArray.newArray(runtime), style});
+            block.yield(ctx, seq);
+            return seq;
+        }
+
+        // syck_out_str
+        @JRubyMethod(required = 2, optional = 1, frame = true)
+        public static IRubyObject str(IRubyObject self, IRubyObject[] args, Block block) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            IRubyObject type_id = args[0];
+            IRubyObject str = args[1];
+            IRubyObject style = args.length == 2 ? runtime.getNil() : args[2];
+            IRubyObject scalar = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar").callMethod(ctx, "new", new IRubyObject[]{type_id, str, style});
+            return scalar;
+        }
     }
 
     public static class Emitter {
