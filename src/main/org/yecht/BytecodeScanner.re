@@ -405,7 +405,7 @@ ANY     {   q.cat(parser.buffer.buffer[tok]);
 */
 }
                case ScalarEnd: {
-                   Node n = parser.allocStr();
+                   Node n = Node.allocStr();
                    Data.Str dd = (Data.Str)n.data;
                    dd.ptr = Pointer.create(q.str, 0);
                    dd.len = q.idx;

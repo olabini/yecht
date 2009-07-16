@@ -26,7 +26,7 @@ public class Parser {
     int linect;
     int last_token;
     int force_token;
-    boolean eof;
+    public boolean eof;
     JechtIO io;
     Map<String, Node> anchors, bad_anchors;
     Map<Integer, Object> syms;
@@ -379,73 +379,4 @@ public class Parser {
     public static boolean tryImplicit(Node n) {
         return true;
     }
-
-    // syck_alloc_map
-    public Node allocMap() {
-        Data.Map m = new Data.Map();
-        m.style = MapStyle.None;
-        m.idx = 0;
-        m.capa = YAML.ALLOC_CT;
-        m.keys = new long[m.capa];
-        m.values = new long[m.capa];
-        
-        Node n = KindTag.Map.allocNode();
-        n.data = m;
-        n.parser = this;
-        return n;
-    }
-
-    // syck_alloc_seq
-    public Node allocSeq() {
-        Data.Seq s = new Data.Seq();
-        s.style = SeqStyle.None;
-        s.idx = 0;
-        s.capa = YAML.ALLOC_CT;
-        s.items = new long[s.capa];
-        
-        Node n = KindTag.Seq.allocNode();
-        n.data = s;
-        n.parser = this;
-        return n;
-    }
-
-    // syck_alloc_str
-    public Node allocStr() {
-        Data.Str s = new Data.Str();
-        s.style = ScalarStyle.None;
-        s.ptr = Pointer.nullPointer();
-        s.len = 0;
-        
-        Node n = KindTag.Str.allocNode();
-        n.data = s;
-        n.parser = this;
-        return n;
-    }
-
-    // syck_new_str
-    // syck_new_str2
-    public Node newStr(Pointer str, int len, ScalarStyle style) {
-        Node n = allocStr();
-        Data.Str s = (Data.Str)n.data;
-        s.ptr = Pointer.create(new byte[len], 0);
-        s.len = len;
-        s.style = style;
-        str.memcpy(s.ptr, len);
-        return n;
-    }
-
-    // syck_new_map
-    public Node newMap(long key, long value) {
-        Node n = allocMap();
-        n.mapAdd(key, value);
-        return n;
-    }
-
-    // syck_new_seq
-    public Node newSeq(long value) {
-        Node n = allocSeq();
-        n.seqAdd(value);
-        return n;
-    }
-
 }// Parser

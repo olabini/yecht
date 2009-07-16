@@ -1,4 +1,4 @@
-// Output created by jacc on Thu Jul 16 11:10:47 CEST 2009
+// Output created by jacc on Thu Jul 16 13:24:02 CEST 2009
 
 package org.yecht;
 
@@ -3386,7 +3386,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr72() { // basic_mapping : atom ':' atom_or_empty
         {
-                    yyrv = parser.newMap( 
+                    yyrv = Node.newMap( 
                         parser.addNode( (Node)yysv[yysp-3] ), 
                         parser.addNode( (Node)yysv[yysp-1] ) );
                 }
@@ -3425,7 +3425,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr67() { // complex_mapping : complex_key ':' complex_value
         {
-                    yyrv = parser.newMap( 
+                    yyrv = Node.newMap( 
                         parser.addNode( (Node)yysv[yysp-3] ), 
                         parser.addNode( (Node)yysv[yysp-1] ) );
                 }
@@ -3584,7 +3584,7 @@ class YechtParser implements YAMLGrammarTokens {
         {
                     if ( ((Node)yysv[yysp-3]).shortcut == null )
                     {
-                        ((Node)yysv[yysp-3]).shortcut = parser.newSeq( ((Long)yysv[yysp-1]).longValue() );
+                        ((Node)yysv[yysp-3]).shortcut = Node.newSeq( ((Long)yysv[yysp-1]).longValue() );
                     }
                     else
                     {
@@ -3626,7 +3626,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr47() { // in_implicit_seq : basic_seq
         {
-                    yyrv = parser.newSeq(((Long)yysv[yysp-1]).longValue());
+                    yyrv = Node.newSeq(((Long)yysv[yysp-1]).longValue());
                 }
         yysv[yysp-=1] = yyrv;
         return yypin_implicit_seq();
@@ -3675,7 +3675,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr52() { // in_inline_seq : inline_seq_atom
         {
-                    yyrv = parser.newSeq( parser.addNode((Node)yysv[yysp-1]));
+                    yyrv = Node.newSeq( parser.addNode((Node)yysv[yysp-1]));
                 }
         yysv[yysp-=1] = yyrv;
         return 59;
@@ -3856,7 +3856,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr74() { // inline_map : '{' '}'
         {
-                    yyrv = parser.allocMap();
+                    yyrv = Node.allocMap();
                 }
         yysv[yysp-=2] = yyrv;
         return 7;
@@ -3865,7 +3865,7 @@ class YechtParser implements YAMLGrammarTokens {
     private int yyr77() { // inline_map_atom : atom
         {
                     Node n = NULL_NODE( parser );
-                    yyrv = parser.newMap( 
+                    yyrv = Node.newMap( 
                         parser.addNode( (Node)yysv[yysp-1] ), 
                         parser.addNode( n ) );
                 }
@@ -3895,7 +3895,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr51() { // inline_seq : '[' ']'
         { 
-                    yyrv = parser.allocSeq();
+                    yyrv = Node.allocSeq();
                 }
         yysv[yysp-=2] = yyrv;
         return 8;
@@ -4194,7 +4194,7 @@ class YechtParser implements YAMLGrammarTokens {
      }
 
 public static Node NULL_NODE(Parser parser) {
-    Node n = parser.newStr(Pointer.create(new byte[0], 0), 0, ScalarStyle.Plain);
+    Node n = Node.newStr(Pointer.create(new byte[0], 0), 0, ScalarStyle.Plain);
     if(parser.taguri_expansion) {
       n.type_id = Parser.taguri(YAML.DOMAIN, "null");
     } else {

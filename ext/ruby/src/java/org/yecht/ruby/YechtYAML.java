@@ -25,6 +25,7 @@ import org.jruby.RubyString;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.BlockCallback;
+import org.jruby.runtime.ObjectSpace;
 import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.ObjectAllocator;
@@ -258,7 +259,7 @@ public class YechtYAML {
             final Ruby runtime = self.getRuntime();
             final ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
-            Parser parser = n.parser;
+            ObjectSpace os = runtime.getObjectSpace();
             IRubyObject obj = null;
             switch(n.kind) {
             case Str:
@@ -269,7 +270,7 @@ public class YechtYAML {
                 Data.Seq ds = (Data.Seq)n.data;
                 obj = RubyArray.newArray(runtime, ds.idx);
                 for(int i = 0; i < ds.idx; i++) {
-                    ((RubyArray)obj).store(i, (IRubyObject)parser.lookupSym(n.seqRead(i)));
+                    ((RubyArray)obj).store(i, os.id2ref(n.seqRead(i)));
                 }
                 break;
             case Map:
@@ -281,8 +282,8 @@ public class YechtYAML {
                 RubyClass cArray = runtime.getArray();
                 
                 for(int i = 0; i < dm.idx; i++) {
-                    IRubyObject k = (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Key, i));
-                    IRubyObject v = (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Value, i));
+                    IRubyObject k = os.id2ref(n.mapRead(MapPart.Key, i));
+                    IRubyObject v = os.id2ref(n.mapRead(MapPart.Value, i));
                     boolean skip_aset = false;
                     
                     if(cMergeKey.isInstance(k)) {
@@ -377,7 +378,7 @@ public class YechtYAML {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
-            Parser parser = n.parser;
+            ObjectSpace os = runtime.getObjectSpace();
             IRubyObject t = runtime.getNil();
             IRubyObject obj = t;
             IRubyObject v = t;
@@ -413,7 +414,7 @@ public class YechtYAML {
             case Seq:
                 v = RubyArray.newArray(runtime, n.seqCount());
                 for(int i = 0; i < n.seqCount(); i++) {
-                    ((RubyArray)v).store(i, (IRubyObject)parser.lookupSym(n.seqRead(i)));
+                    ((RubyArray)v).store(i, os.id2ref(n.seqRead(i)));
                 }
                 if(((Data.Seq)n.data).style == SeqStyle.Inline) {
                     style = runtime.newSymbol("inline");
@@ -424,7 +425,7 @@ public class YechtYAML {
             case Map:
                 v = RubyHash.newHash(runtime);
                 for(int i = 0; i < n.mapCount(); i++) {
-                    ((RubyHash)v).fastASet((IRubyObject)parser.lookupSym(n.mapRead(MapPart.Key, i)), (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Value, i)));
+                    ((RubyHash)v).fastASet(os.id2ref(n.mapRead(MapPart.Key, i)), os.id2ref(n.mapRead(MapPart.Value, i)));
                 }
                 if(((Data.Map)n.data).style == MapStyle.Inline) {
                     style = runtime.newSymbol("inline");
@@ -453,7 +454,7 @@ public class YechtYAML {
                     parser.bonus = new Extra();
                     IRubyObject pobj = new RubyObject(runtime, klass);
                     pobj.dataWrapStruct(parser);
-                    parser.setRootOnError(parser.addSym(runtime.getNil()));
+                    parser.setRootOnError(runtime.getObjectSpace().idOf(runtime.getNil()));
                     return pobj;
                 }
             };
@@ -522,85 +523,159 @@ public class YechtYAML {
 
             return (IRubyObject)parser.lookupSym(parser.parse());
         }
-        
 
-//     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
-//     rb_define_method(cParser, "set_resolver", syck_parser_set_resolver, 1);
+        // syck_parser_load_documents
+        @JRubyMethod(frame=true)
+        public static IRubyObject load_documents(IRubyObject self, IRubyObject port, Block proc) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+
+            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("input"));
+            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("Model"));
+
+            Parser parser = (Parser)self.dataGetStruct();
+            setModel(self, input, model);
+
+            Extra bonus = (Extra)parser.bonus;
+            bonus.taint = assignIO(runtime, parser, new IRubyObject[]{port});
+            bonus.resolver = self.callMethod(ctx, "resolver");
+            bonus.proc = null;
+
+            while(true) {
+                bonus.data = RubyHash.newHash(runtime);
+                IRubyObject v = (IRubyObject)parser.lookupSym(parser.parse());
+                if(parser.eof) {
+                    return runtime.getNil();
+                }
+
+                proc.yield(ctx, v);
+            }
+        }
+
+        // syck_parser_set_resolver
+        @JRubyMethod
+        public static IRubyObject set_resolver(IRubyObject self, IRubyObject resolver) {
+            self.getInstanceVariables().setInstanceVariable("@resolver", resolver);
+            return self;
+        }        
     }
 
     public static class Node {
-//     rb_define_method( cNode, "initialize_copy", syck_node_init_copy, 1 );
-//     rb_define_method( cNode, "type_id=", syck_node_type_id_set, 1 );
-//     rb_define_method( cNode, "transform", syck_node_transform, 0);
+//TODO:     rb_define_method( cNode, "initialize_copy", syck_node_init_copy, 1 );
+//TODO:     rb_define_method( cNode, "type_id=", syck_node_type_id_set, 1 );
+//TODO:     rb_define_method( cNode, "transform", syck_node_transform, 0);
     }
 
     public static class Scalar {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_scalar_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-                    // TODO: implement
-                    return null;
+                    org.yecht.Node node = org.yecht.Node.allocStr();
+                    IRubyObject obj = new RubyObject(runtime, klass);
+                    obj.dataWrapStruct(node);
+                    node.id = runtime.getObjectSpace().idOf(obj);
+                    node.shortcut = obj;
+                    return obj;
                 }
             };
 
-//     rb_define_method( cScalar, "initialize", syck_scalar_initialize, 3 );
-//     rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
-//     rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );
+//TODO:     rb_define_method( cScalar, "initialize", syck_scalar_initialize, 3 );
+//TODO:     rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
+//TODO:     rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );
     }
 
     public static class Seq {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_seq_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-                    // TODO: implement
-                    return null;
+                    org.yecht.Node node = org.yecht.Node.allocSeq();
+                    IRubyObject obj = new RubyObject(runtime, klass);
+                    obj.dataWrapStruct(node);
+                    node.id = runtime.getObjectSpace().idOf(obj);
+                    node.shortcut = obj;
+                    return obj;
                 }
             };
 
-//     rb_define_method( cSeq, "initialize", syck_seq_initialize, 3 );
-//     rb_define_method( cSeq, "value=", syck_seq_value_set, 1 );
-//     rb_define_method( cSeq, "add", syck_seq_add_m, 1 );
-//     rb_define_method( cSeq, "style=", syck_seq_style_set, 1 );
+//TODO:     rb_define_method( cSeq, "initialize", syck_seq_initialize, 3 );
+//TODO:     rb_define_method( cSeq, "value=", syck_seq_value_set, 1 );
+//TODO:     rb_define_method( cSeq, "add", syck_seq_add_m, 1 );
+//TODO:     rb_define_method( cSeq, "style=", syck_seq_style_set, 1 );
     }
 
     public static class Map {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_map_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-                    // TODO: implement
-                    return null;
+                    org.yecht.Node node = org.yecht.Node.allocMap();
+                    IRubyObject obj = new RubyObject(runtime, klass);
+                    obj.dataWrapStruct(node);
+                    node.id = runtime.getObjectSpace().idOf(obj);
+                    node.shortcut = obj;
+                    return obj;
                 }
             };
 
-//     rb_define_method( cMap, "initialize", syck_map_initialize, 3 );
-//     rb_define_method( cMap, "value=", syck_map_value_set, 1 );
-//     rb_define_method( cMap, "add", syck_map_add_m, 2 );
-//     rb_define_method( cMap, "style=", syck_map_style_set, 1 );
+//TODO:     rb_define_method( cMap, "initialize", syck_map_initialize, 3 );
+//TODO:     rb_define_method( cMap, "value=", syck_map_value_set, 1 );
+//TODO:     rb_define_method( cMap, "add", syck_map_add_m, 2 );
+//TODO:     rb_define_method( cMap, "style=", syck_map_style_set, 1 );
     }
 
     public static class PrivateType {
-//     rb_define_method( cPrivateType, "initialize", syck_privatetype_initialize, 2);
+        // syck_privatetype_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self, IRubyObject type_id, IRubyObject val) {
+            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
+            self.getInstanceVariables().setInstanceVariable("@value", val);
+            return self;
+        }
     }
 
     public static class DomainType {
-//     rb_define_method( cDomainType, "initialize", syck_domaintype_initialize, 3);
+        // syck_domaintype_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self, IRubyObject domain, IRubyObject type_id, IRubyObject val) {
+            self.getInstanceVariables().setInstanceVariable("@domain", domain);
+            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
+            self.getInstanceVariables().setInstanceVariable("@value", val);
+            return self;
+        }
     }
 
     public static class YObject {
-//     rb_define_method( cYObject, "initialize", syck_yobject_initialize, 2);
-//     rb_define_method( cYObject, "yaml_initialize", syck_yobject_initialize, 2);
+        // syck_yobject_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self, IRubyObject klass, IRubyObject ivars) {
+            self.getInstanceVariables().setInstanceVariable("@class", klass);
+            self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
+            return self;
+        }
+//TODO:     rb_define_method( cYObject, "yaml_initialize", syck_yobject_initialize, 2);
     }
 
     public static class BadAlias {
-//     rb_define_method( cBadAlias, "initialize", syck_badalias_initialize, 1);
-//     rb_define_method( cBadAlias, "<=>", syck_badalias_cmp, 1);
+        // syck_badalias_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self, IRubyObject val) {
+            self.getInstanceVariables().setInstanceVariable("@name", val);
+            return self;
+        }
+
+        // syck_badalias_cmp
+        @JRubyMethod(name = "<=>")
+        public static IRubyObject cmp(IRubyObject alias1, IRubyObject alias2) {
+            IRubyObject str1 = alias1.getInstanceVariables().getInstanceVariable("@name");
+            IRubyObject str2 = alias2.getInstanceVariables().getInstanceVariable("@name");
+            return str1.callMethod(alias1.getRuntime().getCurrentContext(), "<=>", str2);
+        }
     }
 
     public static class Out {
-//     rb_define_method( cOut, "initialize", syck_out_initialize, 1 );
-//     rb_define_method( cOut, "map", syck_out_map, -1 );
-//     rb_define_method( cOut, "seq", syck_out_seq, -1 );
-//     rb_define_method( cOut, "scalar", syck_out_scalar, -1 );
+//TODO:     rb_define_method( cOut, "initialize", syck_out_initialize, 1 );
+//TODO:     rb_define_method( cOut, "map", syck_out_map, -1 );
+//TODO:     rb_define_method( cOut, "seq", syck_out_seq, -1 );
+//TODO:     rb_define_method( cOut, "scalar", syck_out_scalar, -1 );
     }
 
     public static class Emitter {
@@ -612,11 +687,11 @@ public class YechtYAML {
                 }
             };
 
-//     rb_define_method( cEmitter, "initialize", syck_emitter_reset, -1 );
-//     rb_define_method( cEmitter, "reset", syck_emitter_reset, -1 );
-//     rb_define_method( cEmitter, "emit", syck_emitter_emit, -1 );
-//     rb_define_method( cEmitter, "set_resolver", syck_emitter_set_resolver, 1);
-//     rb_define_method( cEmitter, "node_export", syck_emitter_node_export, 1);
+//TODO:     rb_define_method( cEmitter, "initialize", syck_emitter_reset, -1 );
+//TODO:     rb_define_method( cEmitter, "reset", syck_emitter_reset, -1 );
+//TODO:     rb_define_method( cEmitter, "emit", syck_emitter_emit, -1 );
+//TODO:     rb_define_method( cEmitter, "set_resolver", syck_emitter_set_resolver, 1);
+//TODO:     rb_define_method( cEmitter, "node_export", syck_emitter_node_export, 1);
     }
 }
 
