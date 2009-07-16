@@ -561,7 +561,30 @@ public class YechtYAML {
     }
 
     public static class Node {
-//TODO:     rb_define_method( cNode, "initialize_copy", syck_node_init_copy, 1 );
+        // syck_node_init_copy
+        @JRubyMethod
+        public static IRubyObject initialize_copy(IRubyObject copy, IRubyObject orig) {
+            if(copy == orig) {
+                return copy;
+            }
+
+            if(orig.getClass() != RubyObject.class) {
+                throw copy.getRuntime().newTypeError("wrong argument type");
+            }
+
+            org.yecht.Node orig_n = (org.yecht.Node)orig.dataGetStruct();
+            org.yecht.Node copy_n = (org.yecht.Node)copy.dataGetStruct();
+
+            copy_n.id = orig_n.id;
+            copy_n.kind = orig_n.kind;
+            copy_n.type_id = orig_n.type_id;
+            copy_n.anchor = orig_n.anchor;
+            copy_n.data = orig_n.data.copy();
+            copy_n.shortcut = orig_n.shortcut;
+
+            return copy;
+        }        
+
 //TODO:     rb_define_method( cNode, "type_id=", syck_node_type_id_set, 1 );
 //TODO:     rb_define_method( cNode, "transform", syck_node_transform, 0);
     }
