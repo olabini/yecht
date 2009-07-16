@@ -1054,9 +1054,43 @@ public class YechtYAML {
             return node.callMethod(self.getRuntime().getCurrentContext(), "to_yaml", self);
         }
 
+        // syck_emitter_reset
+        @JRubyMethod(name = {"initialize", "reset"}, optional = 1)
+        public static IRubyObject reset(IRubyObject self, IRubyObject[] args) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            Emitter emitter = (Emitter)self.dataGetStruct();
+            Extra bonus = (Extra)emitter.bonus;
+            bonus.oid = runtime.getNil();
+            bonus.port = runtime.newString("");
+            bonus.data = RubyHash.newHash(runtime);
+            
+            IRubyObject options = null;
+            IRubyObject tmp;
+            if(args.length == 1) {
+                options = args[0];
+                if(!(tmp = options.checkStringType()).isNil()) {
+                    bonus.port = tmp;
+                } else if(options.respondsTo("write")) {
+                    bonus.port = options;
+                } else {
+                    options = TypeConverter.convertToTypeWithCheck(options, runtime.getHash(), "to_hash");
+                    self.getInstanceVariables().setInstanceVariable("@options", options);
+                }
+            } else {
+                options = RubyHash.newHash(runtime);
+                self.getInstanceVariables().setInstanceVariable("@options", options);
+            }
 
-//TODO:     rb_define_method( cEmitter, "initialize", syck_emitter_reset, -1 );
-//TODO:     rb_define_method( cEmitter, "reset", syck_emitter_reset, -1 );
+
+            emitter.headless = false;
+            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(0));
+            self.getInstanceVariables().setInstanceVariable("@resolver", runtime.getNil());
+
+            return self;
+        }
+
+
 //TODO:     rb_define_method( cEmitter, "emit", syck_emitter_emit, -1 );
     }
 }
