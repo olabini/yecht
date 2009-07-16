@@ -1090,8 +1090,35 @@ public class YechtYAML {
             return self;
         }
 
+        // syck_emitter_emit
+        @JRubyMethod(optional = 1, frame = true)
+        public static IRubyObject emit(IRubyObject self, IRubyObject[] _oid, Block proc) {
+            Ruby runtime = self.getRuntime();
+            int level = RubyNumeric.fix2int(self.getInstanceVariables().getInstanceVariable("@level")) + 1;
+            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
+            ThreadContext ctx = runtime.getCurrentContext();
+            Emitter emitter = (Emitter)self.dataGetStruct();
+            Extra bonus = (Extra)emitter.bonus;
 
-//TODO:     rb_define_method( cEmitter, "emit", syck_emitter_emit, -1 );
+            IRubyObject oid = _oid.length == 0 ? runtime.getNil() : _oid[0];
+            
+            bonus.oid = oid;
+            IRubyObject symple;
+            if(!oid.isNil() && bonus.data.callMethod(ctx, "has_key?", oid).isTrue()) {
+                symple = ((RubyHash)bonus.data).fastARef(oid);
+            } else {
+                symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
+            }
+
+            level--;
+            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
+            if(level == 0) {
+                emitter.emit(runtime.getObjectSpace().idOf(symple));
+                emitter.flush(0);
+                return bonus.port;
+            }
+            return symple;
+        }
     }
 }
 
