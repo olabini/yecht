@@ -585,8 +585,64 @@ public class YechtYAML {
             return copy;
         }        
 
-//TODO:     rb_define_method( cNode, "type_id=", syck_node_type_id_set, 1 );
-//TODO:     rb_define_method( cNode, "transform", syck_node_transform, 0);
+        // syck_node_type_id_set
+        @JRubyMethod(name = "type_id=")
+        public static IRubyObject set_type_id(IRubyObject self, IRubyObject type_id) {
+            org.yecht.Node node = (org.yecht.Node)self.dataGetStruct();
+            if(!type_id.isNil()) {
+                node.type_id = type_id.convertToString().toString();
+            }
+            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
+            return type_id;
+        }        
+
+        // syck_node_transform
+        @JRubyMethod
+        public static IRubyObject transform(IRubyObject self) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            org.yecht.Node orig_n = (org.yecht.Node)self.dataGetStruct();
+            IRubyObject t = new RubyObject(runtime, self.getType());
+            org.yecht.Node n = null;
+            ObjectSpace os = runtime.getObjectSpace();
+
+            switch(orig_n.kind) {
+            case Map:
+                n = org.yecht.Node.allocMap();
+                t.dataWrapStruct(n);
+                Data.Map dm = (Data.Map)orig_n.data;
+                for(int i=0; i < dm.idx; i++) {
+                    n.mapAdd(os.idOf(os.id2ref(orig_n.mapRead(MapPart.Key, i)).callMethod(ctx, "transform")),
+                             os.idOf(os.id2ref(orig_n.mapRead(MapPart.Value, i)).callMethod(ctx, "transform")));
+                }
+                break;
+            case Seq:
+                n = org.yecht.Node.allocSeq();
+                t.dataWrapStruct(n);
+                Data.Seq ds = (Data.Seq)orig_n.data;
+                for(int i=0; i < ds.idx; i++) {
+                    n.seqAdd(os.idOf(os.id2ref(orig_n.seqRead(i)).callMethod(ctx, "transform")));
+                }
+                break;
+            case Str:
+                Data.Str dss = (Data.Str)orig_n.data;
+                n = org.yecht.Node.newStr(dss.ptr, dss.len, dss.style);
+                t.dataWrapStruct(n);
+                break;
+            }
+
+            if(orig_n.type_id != null) {
+                n.type_id = orig_n.type_id;
+            }
+
+            if(orig_n.anchor != null) {
+                n.anchor = orig_n.anchor;
+            }
+
+            n.id = os.idOf(t);
+            n.shortcut = t;
+            return ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "node_import", t);
+        }
     }
 
     public static class Scalar {
