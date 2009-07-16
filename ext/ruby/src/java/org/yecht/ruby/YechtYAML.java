@@ -830,8 +830,46 @@ public class YechtYAML {
             return self;
         }
 
-//TODO:     rb_define_method( cMap, "value=", syck_map_value_set, 1 );
-//TODO:     rb_define_method( cMap, "add", syck_map_add_m, 2 );
+        // syck_map_value_set
+        @JRubyMethod(name = "value=")
+        public static IRubyObject value_set(IRubyObject self, IRubyObject val) {
+            org.yecht.Node node = (org.yecht.Node)self.dataGetStruct();
+            Ruby runtime = self.getRuntime();
+            ObjectSpace os = runtime.getObjectSpace();
+            ThreadContext ctx = runtime.getCurrentContext();
+
+            if(!val.isNil()) {
+                IRubyObject hsh = TypeConverter.convertToTypeWithCheck(val, runtime.getHash(), "to_hash");
+
+                if(hsh.isNil()) {
+                    throw runtime.newTypeError("wrong argument type");
+                }
+                node.mapEmpty();
+                IRubyObject keys = hsh.callMethod(ctx, "keys");
+                for(int i = 0; i < ((RubyArray)keys).getLength(); i++) {
+                    IRubyObject key = ((RubyArray)keys).entry(i);
+                    node.mapAdd(os.idOf(key), os.idOf(((RubyHash)hsh).fastARef(key)));
+                }
+            }
+
+            self.getInstanceVariables().setInstanceVariable("@value", val);
+            return val;
+        }
+
+        // syck_map_add_m
+        @JRubyMethod
+        public static IRubyObject add(IRubyObject self, IRubyObject key, IRubyObject val) {
+            IRubyObject emitter = self.getInstanceVariables().getInstanceVariable("@emitter");
+            org.yecht.Node node = (org.yecht.Node)self.dataGetStruct();
+            if(emitter.respondsTo("node_export")) {
+                key = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", key);
+                val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
+            }
+            ObjectSpace os = self.getRuntime().getObjectSpace();
+            node.mapAdd(os.idOf(key), os.idOf(val));
+            ((RubyHash)self.getInstanceVariables().getInstanceVariable("@value")).fastASet(key, val);
+            return self;
+        }
 
         // syck_map_style_set
         @JRubyMethod(name = "style=")
