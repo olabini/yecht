@@ -1137,8 +1137,14 @@ public class YechtYAML {
         }
 
         // rb_syck_output_handler
-        public void handle(Emitter e, byte[] str, int len) {
-            // TODO: implement
+        public void handle(Emitter emitter, byte[] str, int len) {
+            YEmitter.Extra bonus = (YEmitter.Extra)emitter.bonus;
+            IRubyObject dest = bonus.port;
+            if(dest instanceof RubyString) {
+                ((RubyString)dest).cat(new ByteList(str, 0, len, false));
+            } else {
+                dest.callMethod(runtime.getCurrentContext(), "write", RubyString.newStringShared(runtime, str, 0, len));
+            }
         }
     }
 
