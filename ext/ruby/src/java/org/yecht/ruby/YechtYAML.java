@@ -10,6 +10,8 @@ import org.yecht.Node;
 import org.yecht.Parser;
 import org.yecht.Pointer;
 import org.yecht.ImplicitScanner;
+import org.yecht.MapStyle;
+import org.yecht.SeqStyle;
 
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
@@ -59,9 +61,9 @@ public class YechtYAML {
     }
 
     // yaml_org_handler
-    public static int orgHandler(Node n, IRubyObject ref) {
+    public static boolean orgHandler(IRubyObject self, org.yecht.Node n, IRubyObject[] ref) {
         // TODO: implement
-        return -1;
+        return false;
     }
 
     // syck_parser_assign_io
@@ -339,12 +341,96 @@ public class YechtYAML {
     }
 
     public static class DefaultResolver {
-//     rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
-//     rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 1 );
+        // syck_defaultresolver_node_import
+        @JRubyMethod
+        public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+            org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
+            IRubyObject[] _obj = new IRubyObject[]{null};
+            if(!orgHandler(self, n, _obj)) {
+                _obj[0] = self.callMethod(self.getRuntime().getCurrentContext(), "transfer", new IRubyObject[]{self.getRuntime().newString(n.type_id), _obj[0]});
+            }
+            return _obj[0];
+        }        
+
+        // syck_defaultresolver_detect_implicit
+        @JRubyMethod
+        public static IRubyObject detect_implicit(IRubyObject self, IRubyObject val) {
+            IRubyObject tmp = TypeConverter.convertToTypeWithCheck(val, self.getRuntime().getString(), "to_str");
+            if(!tmp.isNil()) {
+                ByteList bl = ((RubyString)tmp).getByteList();
+                String type_id = ImplicitScanner.matchImplicit(Pointer.create(bl.bytes, bl.begin), bl.realSize);
+                return self.getRuntime().newString(type_id);
+            }
+            return RubyString.newEmptyString(self.getRuntime());
+        }        
     }
 
     public static class GenericResolver {
-//     rb_define_singleton_method( oGenericResolver, "node_import", syck_genericresolver_node_import, 1 );
+        // syck_genericresolver_node_import
+        @JRubyMethod
+        public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
+            Parser parser = n.parser;
+            IRubyObject t = runtime.getNil();
+            IRubyObject obj = t;
+            IRubyObject v = t;
+            IRubyObject style = t;
+
+            if(n.type_id != null) {
+                t = runtime.newString(n.type_id);
+            }
+
+            switch(n.kind) {
+            case Str:
+                Data.Str dd = (Data.Str)n.data;
+                v = RubyString.newStringShared(runtime, dd.ptr.buffer, dd.ptr.start, dd.len);
+                switch(dd.style) {
+                case OneQuote:
+                    style = runtime.newSymbol("quote1");
+                    break;
+                case TwoQuote:
+                    style = runtime.newSymbol("quote2");
+                    break;
+                case Fold:
+                    style = runtime.newSymbol("fold");
+                    break;
+                case Literal:
+                    style = runtime.newSymbol("literal");
+                    break;
+                case Plain:
+                    style = runtime.newSymbol("plain");
+                    break;
+                }
+                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+                break;
+            case Seq:
+                v = RubyArray.newArray(runtime, n.seqCount());
+                for(int i = 0; i < n.seqCount(); i++) {
+                    ((RubyArray)v).store(i, (IRubyObject)parser.lookupSym(n.seqRead(i)));
+                }
+                if(((Data.Seq)n.data).style == SeqStyle.Inline) {
+                    style = runtime.newSymbol("inline");
+                }
+                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+                obj.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("seq"));
+                break;
+            case Map:
+                v = RubyHash.newHash(runtime);
+                for(int i = 0; i < n.mapCount(); i++) {
+                    ((RubyHash)v).fastASet((IRubyObject)parser.lookupSym(n.mapRead(MapPart.Key, i)), (IRubyObject)parser.lookupSym(n.mapRead(MapPart.Value, i)));
+                }
+                if(((Data.Map)n.data).style == MapStyle.Inline) {
+                    style = runtime.newSymbol("inline");
+                }
+                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+                obj.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("map"));
+                break;
+            }
+
+            return obj;
+        }        
     }
 
     public static class YParser {
