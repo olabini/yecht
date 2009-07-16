@@ -66,6 +66,11 @@ public class YechtYAML {
         return false;
     }
 
+    // syck_set_model
+    public static void setModel(IRubyObject p, IRubyObject input, IRubyObject model) {
+        // TODO: implement
+    }
+
     // syck_parser_assign_io
     public static boolean assignIO(Ruby runtime, Parser parser, IRubyObject[] pport) {
         boolean taint = true;
@@ -438,7 +443,7 @@ public class YechtYAML {
             public IRubyObject data;
             public IRubyObject proc;
             public IRubyObject resolver;
-            public int taint;
+            public boolean taint;
         }
 
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
@@ -485,8 +490,40 @@ public class YechtYAML {
             Parser p = (Parser)self.dataGetStruct();
             return self.getRuntime().newFixnum(p.bufsize);
         }        
+        
+        // syck_parser_load
+        @JRubyMethod(required = 1, optional = 1)
+        public static IRubyObject load(IRubyObject self, IRubyObject[] args) {
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            IRubyObject port = args[0];
+            IRubyObject proc = null;
+            if(args.length > 1) {
+                proc = args[1];
+            } else {
+                proc = runtime.getNil();
+            }
 
-//     rb_define_method(cParser, "load", syck_parser_load, -1);
+            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("input"));
+            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("Model"));
+
+            Parser parser = (Parser)self.dataGetStruct();
+            setModel(self, input, model);
+            
+            Extra bonus = (Extra)parser.bonus;
+            bonus.taint = assignIO(runtime, parser, new IRubyObject[]{port});
+            bonus.data = RubyHash.newHash(runtime);
+            bonus.resolver = self.callMethod(ctx, "resolver");
+            if(proc.isNil()) {
+                bonus.proc = null;
+            } else {
+                bonus.proc = proc;
+            }
+
+            return (IRubyObject)parser.lookupSym(parser.parse());
+        }
+        
+
 //     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
 //     rb_define_method(cParser, "set_resolver", syck_parser_set_resolver, 1);
     }
