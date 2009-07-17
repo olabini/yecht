@@ -180,6 +180,7 @@ public class YechtYAML {
 
     // yaml_org_handler
     public static boolean orgHandler(IRubyObject self, org.yecht.Node n, IRubyObject[] ref) {
+//         System.err.println("orgHandler(" + self + ", " + n + ")");
         final Ruby runtime = self.getRuntime();
         ThreadContext ctx = runtime.getCurrentContext();
         String type_id = n.type_id;
@@ -360,6 +361,7 @@ public class YechtYAML {
             }
         } catch(java.io.UnsupportedEncodingException e) {}
         ref[0] = obj;
+//         System.err.println(" - transferred: " + transferred);
         return transferred;
     }
 
@@ -372,6 +374,7 @@ public class YechtYAML {
 
         // rb_syck_load_handler
         public long handle(Parser p, org.yecht.Node n) {
+//             System.err.println("rb_syck_load_handler(" + n + ")");
             YParser.Extra bonus = (YParser.Extra)p.bonus;
             IRubyObject resolver = bonus.resolver;
             if(resolver.isNil()) {
@@ -382,8 +385,10 @@ public class YechtYAML {
             _n.dataWrapStruct(n);
             
             IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
-            if(n.id > 0 && !obj.isNil()) {
+//             System.err.println(" node_import -> " + obj);
+            if(!obj.isNil()) {
                 n.id = runtime.getObjectSpace().idOf(obj);
+//                 System.err.println(" -- LoadHandler, setting id, yay!");
                 n.shortcut = obj;
             }
 
@@ -397,6 +402,7 @@ public class YechtYAML {
             
             ((RubyHash)bonus.data).fastASet(((RubyHash)bonus.data).rb_size(), obj);
 
+//             System.err.println(" -> rb_syck_load_handler=" + n.id);
             return n.id;
         }
     }
@@ -649,6 +655,7 @@ public class YechtYAML {
         // syck_resolver_node_import
         @JRubyMethod
         public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+//             System.err.println("syck_resolver_node_import()");
             final Ruby runtime = self.getRuntime();
             final ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
@@ -743,6 +750,7 @@ public class YechtYAML {
         // syck_defaultresolver_node_import
         @JRubyMethod
         public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+//             System.err.println("syck_defaultresolver_node_import()");
             org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
             IRubyObject[] _obj = new IRubyObject[]{null};
             if(!orgHandler(self, n, _obj)) {
@@ -768,6 +776,7 @@ public class YechtYAML {
         // syck_genericresolver_node_import
         @JRubyMethod
         public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+//             System.err.println("syck_genericresolver_node_import()");
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStruct();
@@ -843,6 +852,7 @@ public class YechtYAML {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_parser_s_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+//                     System.err.println("ALLOCATING PARSER");
                     Parser parser = Parser.newParser();
                     parser.bonus = new Extra();
                     IRubyObject pobj = new RubyObject(runtime, klass);
@@ -908,13 +918,16 @@ public class YechtYAML {
             bonus.taint = assignIO(runtime, parser, new IRubyObject[]{port});
             bonus.data = RubyHash.newHash(runtime);
             bonus.resolver = self.callMethod(ctx, "resolver");
+//             System.err.println("Parser resolver is : " + bonus.resolver);
             if(proc.isNil()) {
                 bonus.proc = null;
             } else {
                 bonus.proc = proc;
             }
 
-            return (IRubyObject)parser.lookupSym(parser.parse());
+            long id = parser.parse();
+//             System.err.println("id: " + id);
+            return runtime.getObjectSpace().id2ref(id);
         }
 
         // syck_parser_load_documents
@@ -992,6 +1005,7 @@ public class YechtYAML {
         // syck_node_transform
         @JRubyMethod
         public static IRubyObject transform(IRubyObject self) {
+//             System.err.println("syck_node_transform()");
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node orig_n = (org.yecht.Node)self.dataGetStruct();
@@ -1034,6 +1048,7 @@ public class YechtYAML {
 
             n.id = os.idOf(t);
             n.shortcut = t;
+//             System.err.println("syck_node_transform(), setting id of object on: " + n);
             return ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "node_import", t);
         }
     }
@@ -1042,11 +1057,13 @@ public class YechtYAML {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_scalar_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+//                     System.err.println("ALLOCATING SCALAR");
                     org.yecht.Node node = org.yecht.Node.allocStr();
                     IRubyObject obj = new RubyObject(runtime, klass);
                     obj.dataWrapStruct(node);
                     node.id = runtime.getObjectSpace().idOf(obj);
                     node.shortcut = obj;
+//                     System.err.println("syck_scalar_alloc() -> setting id: " + node.id);
                     return obj;
                 }
             };
@@ -1109,11 +1126,13 @@ public class YechtYAML {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_seq_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+//                     System.err.println("ALLOCATING SEQ");
                     org.yecht.Node node = org.yecht.Node.allocSeq();
                     IRubyObject obj = new RubyObject(runtime, klass);
                     obj.dataWrapStruct(node);
                     node.id = runtime.getObjectSpace().idOf(obj);
                     node.shortcut = obj;
+//                     System.err.println("syck_seq_alloc() -> setting id");
                     return obj;
                 }
             };
@@ -1184,11 +1203,13 @@ public class YechtYAML {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_map_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+//                     System.err.println("ALLOCATING MAP");
                     org.yecht.Node node = org.yecht.Node.allocMap();
                     IRubyObject obj = new RubyObject(runtime, klass);
                     obj.dataWrapStruct(node);
                     node.id = runtime.getObjectSpace().idOf(obj);
                     node.shortcut = obj;
+//                     System.err.println("syck_map_alloc() -> setting id");
                     return obj;
                 }
             };
@@ -1459,6 +1480,7 @@ public class YechtYAML {
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
                 // syck_emitter_s_alloc
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+//                     System.err.println("ALLOCATING EMITTER");
                     Emitter emitter = new Emitter();
                     emitter.bonus = new Extra();
                     IRubyObject pobj = new RubyObject(runtime, klass);

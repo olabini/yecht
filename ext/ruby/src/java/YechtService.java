@@ -25,11 +25,11 @@ public class YechtService implements BasicLibraryService {
         cResolver.addReadWriteAttribute(ctx, "tags");
 
         IRubyObject oDefaultResolver = cResolver.callMethod(ctx, "new");
-        oDefaultResolver.getMetaClass().defineAnnotatedMethods(YechtYAML.DefaultResolver.class);
+        oDefaultResolver.getSingletonClass().defineAnnotatedMethods(YechtYAML.DefaultResolver.class);
         rb_yecht.defineConstant("DefaultResolver", oDefaultResolver);
         
         IRubyObject oGenericResolver = cResolver.callMethod(ctx, "new");
-        oGenericResolver.getMetaClass().defineAnnotatedMethods(YechtYAML.GenericResolver.class);
+        oGenericResolver.getSingletonClass().defineAnnotatedMethods(YechtYAML.GenericResolver.class);
         rb_yecht.defineConstant("GenericResolver", oGenericResolver);
 
         RubyClass cParser = rb_yecht.defineClassUnder("Parser", runtime.getObject(), YechtYAML.YParser.Allocator);
