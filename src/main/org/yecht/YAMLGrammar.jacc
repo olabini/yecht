@@ -456,5 +456,5 @@ public static void applySeqInMap(Parser parser, Node n) {
 }
 
 public void yyerror(String msg) {
-       System.err.println("PARSER ERROR: " + msg);
+       TokenScanner.error(msg, parser);
 }
