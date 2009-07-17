@@ -328,9 +328,14 @@ YINDENT             {
                         int indent = parser.token;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
@@ -369,9 +374,14 @@ YINDENT             {   /* Isolate spaces */
                         int indent = parser.token;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
@@ -610,9 +620,14 @@ YINDENT             {
                         int indent = tok;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
@@ -738,9 +753,14 @@ YINDENT             {
                         int indent = parser.token;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
@@ -819,9 +839,14 @@ YINDENT             {
                         int indent = parser.token;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
@@ -1002,9 +1027,14 @@ YINDENT             {
                         int indent = tok;
                         NEWLINE(indent);
                         while(indent < parser.cursor) {
-                          if(parser.buffer.buffer[indent] == '\t') {
-                            error("TAB found in your indentation, please remove",parser);
-                          } else if(isNewline(++indent) != 0) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+                          if(isNewline(++indent) != 0) {
                             NEWLINE(indent);
                           }
                         }
