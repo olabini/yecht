@@ -41,6 +41,7 @@ public class ImplicitScanner {
 
     // syck_match_implicit
     public static String matchImplicit(Pointer ptr, int len) {
+//        System.err.println("matchImplicit(" + new String(ptr.buffer, ptr.start, len) + ")");
         byte[] data = new byte[len + 1];
         System.arraycopy(ptr.buffer, ptr.start, data, 0, len);
         data[len] = 0;
@@ -134,6 +135,7 @@ ANY                 {   return "str"; }
 
     // syck_type_id_to_uri
     public static String typeIdToUri(String type_id) {
+//        System.err.println("typeIdToUri(" + type_id + ")");
         byte[] data = null;
         try {
           data = type_id.getBytes("ISO8859-1");

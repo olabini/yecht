@@ -229,6 +229,8 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
        parser.read();
      }
 
+//     System.err.println("real_yylex(" + new String(parser.buffer.buffer, parser.buffer.start, parser.bufsize) + ")");
+
      if(parser.force_token != 0) {
        int t = parser.force_token;
        parser.force_token = 0;

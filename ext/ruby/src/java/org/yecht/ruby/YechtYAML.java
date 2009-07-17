@@ -197,6 +197,7 @@ public class YechtYAML {
             case Str:
                 transferred = true;
                 Data.Str ds = (Data.Str)n.data;
+//                 System.err.println(" we have type id: " + type_id + " for: " + n);
                 if(type_id == null) {
                     obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
                 } else if(type_id.equals("null")) {
@@ -284,10 +285,12 @@ public class YechtYAML {
                 } else if(type_id.startsWith("default")) {
                     obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey").callMethod(ctx, "new");
                 } else if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
+//                     System.err.println("houston, we have a symbol: " + n);
                     obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "transfer", 
                                                                                                                                                new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
                                                                                                                                                                  RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
                                                                                                                                                });
+//                     System.err.println(" resulting in: " + obj);
                 } else if(type_id.equals("str")) {
                     obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
                 } else {
