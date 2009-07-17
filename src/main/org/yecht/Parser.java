@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class Parser {
     private Parser() {}
 
-    long root, root_on_error;
+    public long root, root_on_error;
     boolean implicit_typing, taguri_expansion;
     NodeHandler handler;
     ErrorHandler error_handler;
@@ -83,7 +83,7 @@ public class Parser {
 
     // syck_parser_set_root_on_error
     public void setRootOnError(long roer) {
-        root_on_error = roer;
+        this.root_on_error = roer;
     }
 
     // syck_new_parser

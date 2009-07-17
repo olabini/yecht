@@ -14,6 +14,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
        if(parser.error_handler == null) {
            parser.error_handler = new ErrorHandler.Default();
        }
+       System.err.println("GOT AN ERROR: root on error: " + parser.root_on_error);
        parser.root = parser.root_on_error;
        parser.error_handler.handle(parser, msg);
    }

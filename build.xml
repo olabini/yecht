@@ -18,7 +18,7 @@
 
   <path id="ruby.build.classpath">
     <fileset dir="${lib.dir}" includes="yecht*.jar"/>
-    <fileset dir="../jruby/lib" includes="jruby.jar"/>
+    <fileset dir="${jruby.lib}" includes="jruby.jar"/>
   </path>
 
   <patternset id="java.src.pattern">
