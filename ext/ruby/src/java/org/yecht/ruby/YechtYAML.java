@@ -430,10 +430,16 @@ public class YechtYAML {
                 endl++;
             }
             try {
-                String line = new String(p.buffer.buffer, p.lineptr, endl-p.lineptr, "ISO-8859-1");
-                String m1 = msg + " on line " + p.linect + ", col " + (p.cursor-p.lineptr) + ": `" + line + "'";
+                int lp = p.lineptr;
+                if(lp < 0) {
+                    lp = 0;
+                }
+                String line = new String(p.buffer.buffer, lp, endl-lp, "ISO-8859-1");
+                String m1 = msg + " on line " + p.linect + ", col " + (p.cursor-lp) + ": `" + line + "'";
                 throw runtime.newArgumentError(m1);
-            } catch(java.io.UnsupportedEncodingException e) {}
+            } catch(java.io.UnsupportedEncodingException e) {
+            }
+            
         }
     }
 
@@ -446,7 +452,6 @@ public class YechtYAML {
 
         // rb_syck_bad_anchor_handler
         public org.yecht.Node handle(Parser p, String a) {
-            System.err.println("badanchorhandler...");
             IRubyObject anchor_name = runtime.newString(a);
             IRubyObject nm = runtime.newString("name");
             ObjectSpace os = runtime.getObjectSpace();
