@@ -460,7 +460,7 @@ public class YechtYAML {
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
 
-        if(input == null || input.isNil()) {
+        if(input.isNil()) {
             input = p.getInstanceVariables().getInstanceVariable("@input");
         }
 
@@ -573,7 +573,7 @@ public class YechtYAML {
             if(!(type.isNil() || type.convertToString().getByteList().realSize == 0)) {
                 IRubyObject colon = runtime.newString(":");
                 IRubyObject tags = self.callMethod(ctx, "tags");
-                IRubyObject target_class = ((RubyHash)tags).fastARef(type);
+                IRubyObject target_class = ((RubyHash)tags).op_aref(ctx, type);
                 IRubyObject subclass = target_class;
                 IRubyObject obj = runtime.getNil();
                 
@@ -583,10 +583,10 @@ public class YechtYAML {
                     while(parts.getLength() > 1) {
                         subclass_parts.unshift(parts.pop(ctx));
                         IRubyObject partial = parts.join(ctx, colon);
-                        target_class = ((RubyHash)tags).fastARef(partial);
+                        target_class = ((RubyHash)tags).op_aref(ctx, partial);
                         if(target_class.isNil()) {
                             ((RubyString)partial).append(colon);
-                            target_class = ((RubyHash)tags).fastARef(partial);
+                            target_class = ((RubyHash)tags).op_aref(ctx, partial);
                         }
                         if(!target_class.isNil()) {
                             subclass = target_class;
@@ -911,8 +911,8 @@ public class YechtYAML {
                 proc = runtime.getNil();
             }
 
-            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("input"));
-            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("Model"));
+            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).op_aref(ctx, runtime.newSymbol("input"));
+            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).op_aref(ctx, runtime.newSymbol("Model"));
 
             Parser parser = (Parser)self.dataGetStruct();
             setModel(self, input, model);
@@ -939,8 +939,8 @@ public class YechtYAML {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
 
-            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("input"));
-            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).fastARef(runtime.newSymbol("Model"));
+            IRubyObject input = ((RubyHash)self.callMethod(ctx, "options")).op_aref(ctx, runtime.newSymbol("input"));
+            IRubyObject model = ((RubyHash)self.callMethod(ctx, "options")).op_aref(ctx, runtime.newSymbol("Model"));
 
             Parser parser = (Parser)self.dataGetStruct();
             setModel(self, input, model);
@@ -1235,7 +1235,7 @@ public class YechtYAML {
                 IRubyObject keys = hsh.callMethod(ctx, "keys");
                 for(int i = 0; i < ((RubyArray)keys).getLength(); i++) {
                     IRubyObject key = ((RubyArray)keys).entry(i);
-                    node.mapAdd(os.idOf(key), os.idOf(((RubyHash)hsh).fastARef(key)));
+                    node.mapAdd(os.idOf(key), os.idOf(((RubyHash)hsh).op_aref(ctx, key)));
                 }
             }
 
@@ -1264,7 +1264,7 @@ public class YechtYAML {
                 IRubyObject keys = hsh.callMethod(ctx, "keys");
                 for(int i = 0; i < ((RubyArray)keys).getLength(); i++) {
                     IRubyObject key = ((RubyArray)keys).entry(i);
-                    node.mapAdd(os.idOf(key), os.idOf(((RubyHash)hsh).fastARef(key)));
+                    node.mapAdd(os.idOf(key), os.idOf(((RubyHash)hsh).op_aref(ctx, key)));
                 }
             }
 
@@ -1561,7 +1561,7 @@ public class YechtYAML {
             bonus.oid = oid;
             IRubyObject symple;
             if(!oid.isNil() && bonus.data.callMethod(ctx, "has_key?", oid).isTrue()) {
-                symple = ((RubyHash)bonus.data).fastARef(oid);
+                symple = ((RubyHash)bonus.data).op_aref(ctx, oid);
             } else {
                 symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
             }
