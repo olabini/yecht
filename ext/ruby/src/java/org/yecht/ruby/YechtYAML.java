@@ -446,6 +446,7 @@ public class YechtYAML {
 
         // rb_syck_bad_anchor_handler
         public org.yecht.Node handle(Parser p, String a) {
+            System.err.println("badanchorhandler...");
             IRubyObject anchor_name = runtime.newString(a);
             IRubyObject nm = runtime.newString("name");
             ObjectSpace os = runtime.getObjectSpace();
@@ -1585,6 +1586,7 @@ public class YechtYAML {
             } else {
                 symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
             }
+            emitter.markNode(runtime.getObjectSpace().idOf(symple));
 
 //             System.err.println("emit of: " + symple);
 //             System.err.println("  id of symple: " + runtime.getObjectSpace().idOf(symple));

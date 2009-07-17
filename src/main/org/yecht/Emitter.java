@@ -998,6 +998,7 @@ public class Emitter {
             oid = this.markers.size() + 1;
             markers.put(n, oid);
         } else {
+            oid = this.markers.get(n);
             if(this.anchors == null) {
                 this.anchors = new HashMap<Long, String>();
             }

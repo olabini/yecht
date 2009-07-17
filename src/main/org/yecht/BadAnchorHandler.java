@@ -12,7 +12,7 @@ public interface BadAnchorHandler {
 
     public static class Default implements BadAnchorHandler {
         public Node handle(Parser p, String anchor) {
-            System.err.println("existing anchors: " + p.anchors);
+            //            System.err.println("existing anchors: " + p.anchors);
             System.err.println("Bad anchor at [Line " + p.linect + ", Col " + (p.cursor - p.lineptr) + "]: " + anchor);
             return null;
         }
