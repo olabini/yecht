@@ -131,7 +131,7 @@ public class YechtYAML {
             int end = ptr + 1;
             while(Character.isDigit((char)str.buffer[end]) && end < pend) end++;
             byte[] padded = new byte[]{'0', '0', '0', '0', '0', '0'};
-            System.arraycopy(str.buffer, ptr+1, padded, 0, end - (ptr-1));
+            System.arraycopy(str.buffer, ptr+1, padded, 0, end - (ptr+1));
             try {
                 usec = Long.parseLong(new String(padded, 0, 6, "ISO-8859-1"));
             } catch(Exception e) {}
