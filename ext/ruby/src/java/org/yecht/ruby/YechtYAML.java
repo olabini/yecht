@@ -1427,7 +1427,7 @@ public class YechtYAML {
 
         // rb_syck_emitter_handler
         public void handle(Emitter e, long data) {
-            System.err.println("emitting: " + data);
+//             System.err.println("emitting: " + data);
             org.yecht.Node n = (org.yecht.Node)runtime.getObjectSpace().id2ref(data).dataGetStruct();
             switch(n.kind) {
             case Map:
