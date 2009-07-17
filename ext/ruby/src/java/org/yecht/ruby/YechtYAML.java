@@ -1427,6 +1427,7 @@ public class YechtYAML {
 
         // rb_syck_emitter_handler
         public void handle(Emitter e, long data) {
+            System.err.println("emitting: " + data);
             org.yecht.Node n = (org.yecht.Node)runtime.getObjectSpace().id2ref(data).dataGetStruct();
             switch(n.kind) {
             case Map:
@@ -1478,6 +1479,7 @@ public class YechtYAML {
             public IRubyObject oid;
             public IRubyObject data;
             public IRubyObject port;
+            public Object hard;
         }
 
         public static final ObjectAllocator Allocator = new ObjectAllocator() {
@@ -1566,11 +1568,17 @@ public class YechtYAML {
                 symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
             }
 
+//             System.err.println("emit of: " + symple);
+//             System.err.println("  id of symple: " + runtime.getObjectSpace().idOf(symple));
+//             System.err.println("  oid is: " + oid);
+
             level--;
             self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
             if(level == 0) {
+                bonus.hard = symple;
                 emitter.emit(runtime.getObjectSpace().idOf(symple));
                 emitter.flush(0);
+                bonus.hard = null;
                 return bonus.port;
             }
             return symple;
