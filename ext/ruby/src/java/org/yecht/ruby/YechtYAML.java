@@ -323,6 +323,9 @@ public class YechtYAML {
                 for(int i = 0; i < dm.idx; i++) {
                     IRubyObject k = os.id2ref(n.mapRead(MapPart.Key, i));
                     IRubyObject v = os.id2ref(n.mapRead(MapPart.Value, i));
+                    if(null == k) {
+                        System.err.println("k is nil!");
+                    }
                     if(null == v) {
                         v = runtime.getNil();
                     }
@@ -392,6 +395,8 @@ public class YechtYAML {
             }
             
             IRubyObject _n = runtime.newData((RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Node"), n);
+            bonus.holder.add(_n);
+            n.shortcut = bonus.holder;
             
             IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
 //             System.err.println(" node_import -> " + obj);
@@ -1044,14 +1049,26 @@ public class YechtYAML {
             org.yecht.Node n = null;
             ObjectSpace os = runtime.getObjectSpace();
 
+            List<Object> holder = null;
+            if(orig_n.shortcut instanceof List) {
+                holder = (List<Object>)orig_n.shortcut;
+            } else {
+                holder = new LinkedList<Object>();
+            }
+            holder.add(t);
+
             switch(orig_n.kind) {
             case Map:
                 n = org.yecht.Node.allocMap();
                 t.dataWrapStruct(n);
                 Data.Map dm = (Data.Map)orig_n.data;
                 for(int i=0; i < dm.idx; i++) {
-                    n.mapAdd(os.idOf(os.id2ref(orig_n.mapRead(MapPart.Key, i)).callMethod(ctx, "transform")),
-                             os.idOf(os.id2ref(orig_n.mapRead(MapPart.Value, i)).callMethod(ctx, "transform")));
+                    IRubyObject k = os.id2ref(orig_n.mapRead(MapPart.Key, i)).callMethod(ctx, "transform");
+                    IRubyObject v = os.id2ref(orig_n.mapRead(MapPart.Value, i)).callMethod(ctx, "transform");
+                    holder.add(k);
+                    holder.add(v);
+                    n.mapAdd(os.idOf(k),
+                             os.idOf(v));
                 }
                 break;
             case Seq:
@@ -1059,7 +1076,9 @@ public class YechtYAML {
                 t.dataWrapStruct(n);
                 Data.Seq ds = (Data.Seq)orig_n.data;
                 for(int i=0; i < ds.idx; i++) {
-                    n.seqAdd(os.idOf(os.id2ref(orig_n.seqRead(i)).callMethod(ctx, "transform")));
+                    IRubyObject itm = os.id2ref(orig_n.seqRead(i)).callMethod(ctx, "transform");
+                    holder.add(itm);
+                    n.seqAdd(os.idOf(itm));
                 }
                 break;
             case Str:
@@ -1078,9 +1097,11 @@ public class YechtYAML {
             }
 
             n.id = os.idOf(t);
-            n.shortcut = t;
+            n.shortcut = holder;
 //             System.err.println("syck_node_transform(), setting id of object on: " + n);
-            return ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "node_import", t);
+            IRubyObject result = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "node_import", t);
+            holder.add(result);
+            return result;
         }
     }
 
