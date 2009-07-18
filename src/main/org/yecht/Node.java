@@ -47,7 +47,7 @@ public class Node {
             if(buf[go] == ',') {
                 d.len--;
                 end--;
-                System.arraycopy(buf, go+1, buf, go, go-end);
+                System.arraycopy(buf, go+1, buf, go, end-go);
             }
         }
     }
