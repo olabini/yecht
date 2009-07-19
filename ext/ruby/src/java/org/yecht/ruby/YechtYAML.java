@@ -37,7 +37,6 @@ import org.jruby.RubyString;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.BlockCallback;
-import org.jruby.runtime.ObjectSpace;
 import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.ObjectAllocator;
@@ -189,7 +188,6 @@ public class YechtYAML {
         String type_id = n.type_id;
         boolean transferred = false;
         IRubyObject obj = runtime.getNil();
-        ObjectSpace os = runtime.getObjectSpace();
 
         if(type_id != null && type_id.startsWith("tag:yaml.org,2002:")) {
             type_id = type_id.substring(18);
@@ -456,7 +454,6 @@ public class YechtYAML {
         public org.yecht.Node handle(Parser p, String a) {
             IRubyObject anchor_name = runtime.newString(a);
             IRubyObject nm = runtime.newString("name");
-            ObjectSpace os = runtime.getObjectSpace();
             org.yecht.Node badanc = org.yecht.Node.newMap(nm, anchor_name);
             badanc.type_id = "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias";
             return badanc;
@@ -675,7 +672,6 @@ public class YechtYAML {
             final Ruby runtime = self.getRuntime();
             final ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
-            ObjectSpace os = runtime.getObjectSpace();
             IRubyObject obj = null;
             switch(n.kind) {
             case Str:
@@ -800,7 +796,6 @@ public class YechtYAML {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
-            ObjectSpace os = runtime.getObjectSpace();
             IRubyObject t = runtime.getNil();
             IRubyObject obj = t;
             IRubyObject v = t;
@@ -1038,7 +1033,6 @@ public class YechtYAML {
             org.yecht.Node orig_n = (org.yecht.Node)self.dataGetStructChecked();
             IRubyObject t = runtime.newData(self.getType(), null);
             org.yecht.Node n = null;
-            ObjectSpace os = runtime.getObjectSpace();
 
             switch(orig_n.kind) {
             case Map:
@@ -1179,7 +1173,6 @@ public class YechtYAML {
         public static IRubyObject value_set(IRubyObject self, IRubyObject val) {
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             Ruby runtime = self.getRuntime();
-            ObjectSpace os = runtime.getObjectSpace();
 
             val = val.checkArrayType();
             if(!val.isNil()) {
@@ -1243,7 +1236,6 @@ public class YechtYAML {
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
-            ObjectSpace os = runtime.getObjectSpace();
             Data.Map ds = (Data.Map)node.data;
 
             if(!val.isNil()) {
@@ -1271,7 +1263,6 @@ public class YechtYAML {
         public static IRubyObject value_set(IRubyObject self, IRubyObject val) {
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             Ruby runtime = self.getRuntime();
-            ObjectSpace os = runtime.getObjectSpace();
             ThreadContext ctx = runtime.getCurrentContext();
 
             if(!val.isNil()) {
@@ -1301,7 +1292,6 @@ public class YechtYAML {
                 key = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", key);
                 val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
             }
-            ObjectSpace os = self.getRuntime().getObjectSpace();
             node.mapAdd(key, val);
             ((RubyHash)self.getInstanceVariables().getInstanceVariable("@value")).fastASet(key, val);
             return self;
@@ -1585,10 +1575,6 @@ public class YechtYAML {
                 symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
             }
             emitter.markNode(symple);
-
-//             System.err.println("emit of: " + symple);
-//             System.err.println("  id of symple: " + runtime.getObjectSpace().idOf(symple));
-//             System.err.println("  oid is: " + oid);
 
             level--;
             self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
