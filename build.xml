@@ -163,12 +163,16 @@
   
   <target name="dist" depends="dist-bin,dist-src"/>
 
-  <target name="clean" depends="prepare" description="clean almost everything">
+  <target name="clean" description="clean almost everything">
     <delete dir="${build.dir}"/>
     <delete file="${lib.dir}/yecht-0.0.1.jar" quiet="true"/>
+    <delete file="${lib.dir}/yecht-ruby-0.0.1.jar" quiet="true"/>
   </target>
 
   <target name="full-clean" depends="clean" description="clean almost everything">
     <delete file="-o ${main.src.dir}/org/yecht/TokenScanner.java" quiet="true"/>
+    <delete file="-o ${main.src.dir}/org/yecht/ImplicitScanner.java" quiet="true"/>
+    <delete file="-o ${main.src.dir}/org/yecht/BytecodeScanner.java" quiet="true"/>
+    <delete file="-o ${main.src.dir}/org/yecht/YechtParser.java" quiet="true"/>
   </target>
 </project>

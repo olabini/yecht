@@ -81,6 +81,12 @@ public class YAML {
         return newArray;
     }
 
+    public static Object[] realloc(Object[] input, int size) {
+        Object[] newArray = new Object[size];
+        System.arraycopy(input, 0, newArray, 0, input.length);
+        return newArray;
+    }
+
     // syck_yaml2byte
     public static byte[] yaml2byte(byte[] yamlstr) {
         Parser parser = Parser.newParser();
@@ -89,8 +95,7 @@ public class YAML {
         parser.errorHandler(null);
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
-        long oid = parser.parse();
-        Bytestring sav = (Bytestring)parser.lookupSym(oid);
+        Bytestring sav = (Bytestring)parser.parse();
         if(null == sav) {
             return null;
         } else {

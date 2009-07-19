@@ -3,6 +3,7 @@
  */
 package org.yecht;
 
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -28,8 +29,7 @@ public class Emitter {
     public DocStage stage;
     public int level;
     public int indent;
-    public long ignore_id;
-    Map<Long, Long> markers;
+    Map<Object, Long> markers;
     Map<Long, String> anchors;
     Map<String, Object> anchored;
     int bufsize;
@@ -225,7 +225,7 @@ public class Emitter {
      * issue the callback to the emitter handler.
      */
     // syck_emit
-    public void emit(long n) {
+    public void emit(Object n) {
         int indent = 0;
         int x = 0;
         Level lvl = currentLevel();
@@ -234,7 +234,6 @@ public class Emitter {
             if(use_version) {
                 String header = "--- %YAML:" + YAML.YAML_MAJOR + "." + YAML.YAML_MINOR + " ";
                 write(Pointer.create(header), header.length());
-
             } else {
                 write(THREE_DASHES, 4);
             }
@@ -869,7 +868,7 @@ public class Emitter {
     }
 
     // syck_emit_item
-    public void emitItem(long n) {
+    public void emitItem(Object n) {
         Level lvl = currentLevel();
         switch(lvl.status) {
         case seq: {
@@ -988,10 +987,10 @@ public class Emitter {
     }
 
     // syck_emitter_mark_node
-    public long markNode(long n) {
+    public long markNode(Object n) {
         long oid = 0;
         if(this.markers == null) {
-            this.markers = new HashMap<Long, Long>();
+            this.markers = new IdentityHashMap<Object, Long>();
         }
 
         if(!this.markers.containsKey(n)) {

@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class Parser {
     private Parser() {}
 
-    public long root, root_on_error;
+    public Object root, root_on_error;
     boolean implicit_typing, taguri_expansion;
     NodeHandler handler;
     ErrorHandler error_handler;
@@ -29,7 +29,7 @@ public class Parser {
     public boolean eof;
     JechtIO io;
     Map<String, Node> anchors, bad_anchors;
-    Map<Integer, Object> syms;
+//     Map<Integer, Object> syms;
     Level[] levels;
     int lvl_idx;
     int lvl_capa;
@@ -73,8 +73,8 @@ public class Parser {
         marker = -1;
         limit = -1;
 
-        root = 0;
-        root_on_error = 0;
+        root = null;
+        root_on_error = null;
         linect = 0;
         eof = false;
         last_token = 0;
@@ -82,7 +82,7 @@ public class Parser {
     }
 
     // syck_parser_set_root_on_error
-    public void setRootOnError(long roer) {
+    public void setRootOnError(Object roer) {
         this.root_on_error = roer;
     }
 
@@ -94,7 +94,7 @@ public class Parser {
         p.input_type = ParserInput.YAML_UTF8;
         p.io_type = IOType.Str;
         p.io = null;
-        p.syms = new HashMap<Integer, Object>();
+//         p.syms = new HashMap<Integer, Object>();
         p.anchors = null;
         p.bad_anchors = null;
         p.implicit_typing = true;
@@ -106,17 +106,17 @@ public class Parser {
         return p;
     }
 
-    // syck_add_sym
-    public int addSym(Object data) {
-        int id = syms.size() + 1;
-        syms.put(Integer.valueOf(id), data);
-        return id;
-    }
+//     // syck_add_sym
+//     public int addSym(Object data) {
+//         int id = syms.size() + 1;
+//         syms.put(Integer.valueOf(id), data);
+//         return id;
+//     }
 
-    // syck_lookup_sym
-    public Object lookupSym(long id) {
-        return syms.get(Integer.valueOf((int)id));
-    }
+//     // syck_lookup_sym
+//     public Object lookupSym(long id) {
+//         return syms.get(Integer.valueOf((int)id));
+//     }
 
     // syck_parser_handler
     public void handler(NodeHandler hdlr) {
@@ -278,7 +278,7 @@ public class Parser {
     }
 
     // syck_parse
-    public long parse() {
+    public Object parse() {
         resetLevels();
         yechtparse();
         return root;
@@ -289,13 +289,11 @@ public class Parser {
     }
 
     // syck_hdlr_add_node
-    public long addNode(Node n) {
-        long id;
-        if(n.id == 0) {
+    public Object addNode(Node n) {
+        if(n.id == null) {
             n.id = handler.handle(this, n);
         }
-        id = n.id;
-        return id;
+        return n.id;
     }
 
     // syck_hdlr_add_anchor

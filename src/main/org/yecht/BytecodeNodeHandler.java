@@ -17,7 +17,7 @@ public class BytecodeNodeHandler implements NodeHandler {
     }
 
     // syck_yaml2byte_handler
-    public long handle(Parser p, Node n) {
+    public Object handle(Parser p, Node n) {
         Bytestring val = new Bytestring();
         if(n.anchor != null) {
             val.append(YAML.BYTE_ANCHOR, bytes(n.anchor), 0, -1);
@@ -63,9 +63,7 @@ public class BytecodeNodeHandler implements NodeHandler {
             val.append(YAML.BYTE_SEQUENCE,null,0,-1);
             Data.Seq dd = (Data.Seq)n.data;
             for(int i = 0; i < dd.idx; i++) {
-                long oid = n.seqRead(i);
-                Bytestring sav = (Bytestring)p.lookupSym(oid);
-                val.extend(sav);
+                val.extend((Bytestring)n.seqRead(i));
             }
             val.append(YAML.BYTE_END_BRANCH,null,0,-1);
             break;
@@ -74,17 +72,13 @@ public class BytecodeNodeHandler implements NodeHandler {
             val.append(YAML.BYTE_MAPPING,null,0,-1);
             Data.Map dd = (Data.Map)n.data;
             for(int i = 0; i < dd.idx; i++) {
-                long oid = n.mapRead(MapPart.Key, i);
-                Bytestring sav = (Bytestring)p.lookupSym(oid);
-                val.extend(sav);
-                oid = n.mapRead(MapPart.Value, i);
-                sav = (Bytestring)p.lookupSym(oid);
-                val.extend(sav);
+                val.extend((Bytestring)n.mapRead(MapPart.Key, i));
+                val.extend((Bytestring)n.mapRead(MapPart.Value, i));
             }
             val.append(YAML.BYTE_END_BRANCH,null,0,-1);
             break;
         }
         }
-        return p.addSym(val);
+        return val;
     }
 }// BytecodeNodeHandler

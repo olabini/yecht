@@ -8,7 +8,7 @@ package org.yecht;
  * @author <a href="mailto:ola.bini@gmail.com">Ola Bini</a>
  */
 public class Node {
-    public long id = 0;
+    public Object id = null;
     public KindTag kind;
     public String type_id;
     public String anchor;
@@ -62,12 +62,12 @@ public class Node {
         Data.Map m = (Data.Map)data;
         m.idx = 0;
         m.capa = YAML.ALLOC_CT;
-        m.keys = new long[m.capa];
-        m.values = new long[m.capa];
+        m.keys = new Object[m.capa];
+        m.values = new Object[m.capa];
     }
 
     // syck_map_add
-    public void mapAdd(long key, long value) {
+    public void mapAdd(Object key, Object value) {
         Data.Map m = (Data.Map)data;
         int idx = m.idx;
         m.idx++;
@@ -113,7 +113,7 @@ public class Node {
     }
 
     // syck_map_assign
-    public void mapAssign(MapPart p, int idx, long id) {
+    public void mapAssign(MapPart p, int idx, Object id) {
         Data.Map m = (Data.Map)data;
         if(p == MapPart.Key) {
             m.keys[idx] = id;
@@ -123,7 +123,7 @@ public class Node {
     }
 
     // syck_map_read
-    public long mapRead(MapPart p, int idx) {
+    public Object mapRead(MapPart p, int idx) {
         Data.Map m = (Data.Map)data;
         if(p == MapPart.Key) {
             return m.keys[idx];
@@ -137,11 +137,11 @@ public class Node {
         Data.Seq s = (Data.Seq)data;
         s.idx = 0;
         s.capa = YAML.ALLOC_CT;
-        s.items = new long[s.capa];
+        s.items = new Object[s.capa];
     }
 
     // syck_seq_add
-    public void seqAdd(long value) {
+    public void seqAdd(Object value) {
         Data.Seq s = (Data.Seq)data;
         int idx = s.idx;
         s.idx++;
@@ -158,12 +158,12 @@ public class Node {
     }
 
     // syck_seq_assign
-    public void seqAssign(int idx, long id) {
+    public void seqAssign(int idx, Object id) {
         ((Data.Seq)data).items[idx] = id;
     }
 
     // syck_seq_read
-    public long seqRead(int idx) {
+    public Object seqRead(int idx) {
         return ((Data.Seq)data).items[idx];
     }
 
@@ -173,8 +173,8 @@ public class Node {
         m.style = MapStyle.None;
         m.idx = 0;
         m.capa = YAML.ALLOC_CT;
-        m.keys = new long[m.capa];
-        m.values = new long[m.capa];
+        m.keys = new Object[m.capa];
+        m.values = new Object[m.capa];
         
         Node n = KindTag.Map.allocNode();
         n.data = m;
@@ -187,7 +187,7 @@ public class Node {
         s.style = SeqStyle.None;
         s.idx = 0;
         s.capa = YAML.ALLOC_CT;
-        s.items = new long[s.capa];
+        s.items = new Object[s.capa];
         
         Node n = KindTag.Seq.allocNode();
         n.data = s;
@@ -219,14 +219,14 @@ public class Node {
     }
 
     // syck_new_map
-    public static Node newMap(long key, long value) {
+    public static Node newMap(Object key, Object value) {
         Node n = allocMap();
         n.mapAdd(key, value);
         return n;
     }
 
     // syck_new_seq
-    public static Node newSeq(long value) {
+    public static Node newSeq(Object value) {
         Node n = allocSeq();
         n.seqAdd(value);
         return n;

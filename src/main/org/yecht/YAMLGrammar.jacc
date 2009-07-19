@@ -239,11 +239,11 @@ top_imp_seq     : YAML_TRANSFER indent_sep in_implicit_seq
 
 in_implicit_seq : basic_seq
                 {
-                    $$ = Node.newSeq(((Long)$1).longValue());
+                    $$ = Node.newSeq($1);
                 }
 				| in_implicit_seq indent_sep basic_seq
 				{ 
-                    ((Node)$1).seqAdd(((Long)$3).longValue());
+                    ((Node)$1).seqAdd($3);
                     $$ = $1;
 				}
 				| in_implicit_seq indent_sep
@@ -364,11 +364,11 @@ in_implicit_map : complex_mapping
                 {
                     if ( ((Node)$1).shortcut == null )
                     {
-                        ((Node)$1).shortcut = Node.newSeq( ((Long)$3).longValue() );
+                        ((Node)$1).shortcut = Node.newSeq($3);
                     }
                     else
                     {
-                        ((Node)((Node)$1).shortcut).seqAdd( ((Long)$3).longValue() );
+                        ((Node)((Node)$1).shortcut).seqAdd($3);
                     }
                     $$ = $1;
                 }

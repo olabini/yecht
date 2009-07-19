@@ -1,4 +1,4 @@
-// Output created by jacc on Fri Jul 17 14:06:06 CEST 2009
+// Output created by jacc on Sun Jul 19 18:30:43 CEST 2009
 
 package org.yecht;
 
@@ -3584,11 +3584,11 @@ class YechtParser implements YAMLGrammarTokens {
         {
                     if ( ((Node)yysv[yysp-3]).shortcut == null )
                     {
-                        ((Node)yysv[yysp-3]).shortcut = Node.newSeq( ((Long)yysv[yysp-1]).longValue() );
+                        ((Node)yysv[yysp-3]).shortcut = Node.newSeq(yysv[yysp-1]);
                     }
                     else
                     {
-                        ((Node)((Node)yysv[yysp-3]).shortcut).seqAdd( ((Long)yysv[yysp-1]).longValue() );
+                        ((Node)((Node)yysv[yysp-3]).shortcut).seqAdd(yysv[yysp-1]);
                     }
                     yyrv = yysv[yysp-3];
                 }
@@ -3626,7 +3626,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr47() { // in_implicit_seq : basic_seq
         {
-                    yyrv = Node.newSeq(((Long)yysv[yysp-1]).longValue());
+                    yyrv = Node.newSeq(yysv[yysp-1]);
                 }
         yysv[yysp-=1] = yyrv;
         return yypin_implicit_seq();
@@ -3634,7 +3634,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr48() { // in_implicit_seq : in_implicit_seq indent_sep basic_seq
         { 
-                    ((Node)yysv[yysp-3]).seqAdd(((Long)yysv[yysp-1]).longValue());
+                    ((Node)yysv[yysp-3]).seqAdd(yysv[yysp-1]);
                     yyrv = yysv[yysp-3];
                                 }
         yysv[yysp-=3] = yyrv;

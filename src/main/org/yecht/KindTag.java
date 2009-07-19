@@ -14,7 +14,7 @@ public enum KindTag {
     public Node allocNode() {
         Node s = new Node();
         s.kind = this;
-        s.id = 0;
+        s.id = null;
         return s;
     }
 }// KindTag
