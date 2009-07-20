@@ -18,7 +18,7 @@ public abstract class Data {
         public int idx;
 
         public String toString() {
-            return "{}";
+            return "{idx=" + idx + ", capa=" + capa + ", keys=" + java.util.Arrays.asList(keys) + ", values=" + java.util.Arrays.asList(values) + "}";
         }
 
         public Map copy() {
@@ -41,7 +41,7 @@ public abstract class Data {
         public int idx;
 
         public String toString() {
-            return "[]";
+            return "[idx=" + idx + ", capa=" + capa + ", items=" + java.util.Arrays.asList(items) + "]";
         }
 
         public Seq copy() {

@@ -290,6 +290,7 @@ public class Parser {
 
     // syck_hdlr_add_node
     public Object addNode(Node n) {
+        //        System.err.println("addNode(" + n + ")");
         if(n.id == null) {
             n.id = handler.handle(this, n);
         }

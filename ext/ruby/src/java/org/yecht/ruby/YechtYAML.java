@@ -322,6 +322,7 @@ public class YechtYAML {
                     IRubyObject k = (IRubyObject)n.mapRead(MapPart.Key, i);
                     IRubyObject v = (IRubyObject)n.mapRead(MapPart.Value, i);
                     if(null == k) {
+                        System.err.println("working on: " + n);
                         System.err.println("k is nil!");
                     }
                     if(null == v) {
@@ -396,7 +397,7 @@ public class YechtYAML {
             
             IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
 //             System.err.println(" node_import -> " + obj);
-            if(!obj.isNil()) {
+            if(n.id == null || !obj.isNil()) {
                 n.id = obj;
 //                 System.err.println(" -- LoadHandler, setting id, yay!");
             }
