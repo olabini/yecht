@@ -1009,7 +1009,7 @@ ANY                 {
                         } else if(parser.buffer.buffer[yyt] == '+' ) {
                            nlDoWhat = YAML.NL_KEEP;
                         } else if(Character.isDigit((char)parser.buffer.buffer[yyt])) {
-                           forceIndent = '0' - (char)parser.buffer.buffer[yyt];
+                           forceIndent = (char)parser.buffer.buffer[yyt] - '0';
                         }
                      }
 
@@ -1047,7 +1047,6 @@ YINDENT             {
                         }
 
                         lvl = parser.currentLevel();
-
                         if(lvl.status != LevelStatus.block) {
                             parentIndent = GET_TRUE_YAML_INDENT();
                             if(forceIndent > 0) forceIndent += parentIndent;
