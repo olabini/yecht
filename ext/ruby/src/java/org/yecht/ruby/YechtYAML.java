@@ -632,10 +632,11 @@ public class YechtYAML {
             RubyArray tparts = ((RubyString)const_name).split(self.getRuntime().getCurrentContext(), self.getRuntime().newString("::"));
             for(int i=0; i < tparts.getLength(); i++) {
                 String tpart = tparts.entry(i).toString();
-                if(!tclass.hasConstant(tpart)) {
+                try {
+                    tclass = (RubyModule)tclass.getConstant(tpart);
+                } catch(Exception e) {
                     return self.getRuntime().getNil();
                 }
-                tclass = (RubyModule)tclass.getConstant(tpart);
             }
             return tclass;
         }
