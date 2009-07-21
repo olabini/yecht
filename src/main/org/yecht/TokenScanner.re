@@ -979,7 +979,7 @@ ANY                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
                     }
 
 "\\x" HEX HEX       {   
-                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.token+2, 2, "ISO-8859-1"), 16).intValue());
+                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.toktmp+2, 2, "ISO-8859-1"), 16).intValue());
                         mainLoopGoto = TransferMethod2; break gotoSomething;
                     }
 
