@@ -288,7 +288,7 @@ public class YechtYAML {
                     obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
                     obj.callMethod(ctx, "tr!", new IRubyObject[]{runtime.newString("\n\t "), runtime.newString("")});
                     IRubyObject arr = obj.callMethod(ctx, "unpack", runtime.newString("m"));
-                    obj = ((RubyArray)arr).unshift();
+                    obj = ((RubyArray)arr).shift(ctx);
                 } else if(type_id.equals("bool#yes")) {
                     obj = runtime.getTrue();
                 } else if(type_id.equals("bool#no")) {
