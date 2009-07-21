@@ -153,7 +153,7 @@ public class YechtYAML {
 
     private static int extractInt(byte[] buff, int p, int pend) {
         int len = 0;
-        while(Character.isDigit((char)buff[p+len]) && (p+len) < pend) {
+        while((p+len) < pend && Character.isDigit((char)buff[p+len])) {
             len++;
         }
         try {
@@ -163,6 +163,7 @@ public class YechtYAML {
     
     // rb_syck_mktime
     public static IRubyObject makeTime(Ruby runtime, Pointer str, int len) {
+//         System.err.println("makeTime(" + new String(str.buffer, str.start, len) + ")");
         int ptr = str.start;
         int pend = ptr + len;
         IRubyObject year = runtime.newFixnum(0);
@@ -215,7 +216,7 @@ public class YechtYAML {
             System.arraycopy(str.buffer, ptr+1, padded, 0, end - (ptr+1));
             try {
                 usec = Long.parseLong(new String(padded, 0, 6, "ISO-8859-1"));
-            } catch(Exception e) {}
+            } catch(java.io.UnsupportedEncodingException e) {}
         } else {
             usec = 0;
         }
@@ -247,15 +248,16 @@ public class YechtYAML {
                         tz_offset += extractInt(str.buffer, ptr, pend) * 60;
                     }
                 }
-
+                
                 IRubyObject time = runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec});
                 long tmp = RubyNumeric.num2long(time.callMethod(runtime.getCurrentContext(), "to_i")) - tz_offset;
                 return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "at", new IRubyObject[]{runtime.newFixnum(tmp), runtime.newFixnum(usec)});
-            } catch(Exception e) {}
+            } catch(java.io.UnsupportedEncodingException e) {}
         } else {
             // Make UTC time
             return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec,runtime.newFixnum(usec)});
         }
+        System.err.println("oopsie, returning null");
         return null;
     }
 
