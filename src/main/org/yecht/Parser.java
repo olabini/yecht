@@ -28,7 +28,7 @@ public class Parser {
     int force_token;
     public boolean eof;
     JechtIO io;
-    Map<String, Node> anchors, bad_anchors;
+    Map<String, Node> anchors, bad_anchors, prepared_anchors;
 //     Map<Integer, Object> syms;
     Level[] levels;
     int lvl_idx;
@@ -97,6 +97,7 @@ public class Parser {
 //         p.syms = new HashMap<Integer, Object>();
         p.anchors = null;
         p.bad_anchors = null;
+        p.prepared_anchors = null;
         p.implicit_typing = true;
         p.taguri_expansion = false;
         p.bufsize = YAML.BUFFERSIZE;
@@ -297,21 +298,37 @@ public class Parser {
         return n.id;
     }
 
+//     public void prepareAnchor(String a, Node n) {
+//         System.err.println("prepareAnchor(" + a + ", " + n + ")");
+//         if(prepared_anchors == null) {
+//             prepared_anchors = new HashMap<String, Node>();
+//         }
+//         prepared_anchors.put(a, n);
+//     }
+
     // syck_hdlr_add_anchor
     public Node addAnchor(String a, Node n) {
+//         System.err.println("addAnchor(" + a + ", " + n + ")");
+
         n.anchor = a;
         if(bad_anchors != null) {
+//             System.err.print(" -- bad_anchors != null\n");
             if(bad_anchors.containsKey(a)) {
+//                 System.err.print(" -- st_lookup(p->bad_anchors) succeeded\n");
                 if(n.kind != KindTag.Str) {
                     Node bad = bad_anchors.get(a);
+//                     System.err.print(" -- this is not a str\n");
+//                     System.err.print(" -- id: " + n.id + ", bad.id: " + bad.id +"\n");
                     n.id = bad.id;
                     handler.handle(this, n);
                 }
             }
         }
         if(anchors == null) {
+//             System.err.print(" -- anchors == null\n");
             anchors = new HashMap<String, Node>();
         }
+//         System.err.print(" -- inserting into the anchor again\n");
         anchors.put(a, n);
         return n;
     }
@@ -326,25 +343,37 @@ public class Parser {
 
     // syck_hdlr_get_anchor
     public Node getAnchor(String a) {
+//         System.err.println("getAnchor(" + a + ")");
         Node n = null;
         if(anchors != null) {
+//             System.err.print(" -- anchors != null\n");
             if(anchors.containsKey(a)) {
+//                 System.err.print(" -- st_lookup succeeded\n");
                 n = anchors.get(a);
                 if(n != null) {
+//                     System.err.print(" -- n != 1\n");
                     return n;
                 } else {
+//                     System.err.print(" -- n === 1\n");
                     if(bad_anchors == null) {
+//                         System.err.print(" -- creating new list of bad anchors\n");
                         bad_anchors = new HashMap<String, Node>();
                     }
+//                     System.err.print(" -- checking if n exists in bad anchors\n");
                     if(!bad_anchors.containsKey(a)) {
+//                         System.err.print(" -- no, it doesnt\n");
                         n = bad_anchor_handler.handle(this, a);
                         bad_anchors.put(a, n);
+                    } else {
+                        n = bad_anchors.get(a);
                     }
                 }
             }
         }
 
+//         System.err.print(" -- n == null?\n");
         if(n == null) {
+//             System.err.print(" --- yep ?\n");
             n = bad_anchor_handler.handle(this, a);
         }
 

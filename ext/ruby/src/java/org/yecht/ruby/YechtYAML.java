@@ -44,6 +44,85 @@ import org.jruby.util.ByteList;
 import org.jruby.util.TypeConverter;
 
 public class YechtYAML {
+    private static interface PossibleLinkNode {
+        void addLink(StorageLink link);
+        void replaceLinks(IRubyObject newObject);
+    }
+
+    private static abstract class StorageLink {
+        public abstract void replaceLinkWith(IRubyObject object);
+    }
+
+    private static class ArrayStorageLink extends StorageLink {
+        private final RubyArray array;
+        private final int index;
+        private final IRubyObject originalObject;
+
+        public ArrayStorageLink(IRubyObject arr, int index, IRubyObject originalObject) {
+            this.array = (RubyArray)arr;
+            this.index = index;
+            this.originalObject = originalObject;
+        }
+
+        public void replaceLinkWith(IRubyObject newObject) {
+            array.store(index, newObject);
+        }
+    }
+
+    private static class HashStorageLink extends StorageLink {
+        private final RubyHash hash;
+        private final IRubyObject key;
+        private final IRubyObject originalObject;
+
+        public HashStorageLink(IRubyObject h, IRubyObject key, IRubyObject originalObject) {
+            this.hash = (RubyHash)h;
+            this.key = key;
+            this.originalObject = originalObject;
+        }
+
+        public void replaceLinkWith(IRubyObject newObject) {
+            hash.fastASet(key, newObject);
+        }
+    }
+
+    public static class BadAlias extends RubyObject implements PossibleLinkNode {
+        public static final ObjectAllocator Allocator = new ObjectAllocator() {
+                public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+                    return new BadAlias(runtime, klass);
+                }
+            };
+        
+        public BadAlias(Ruby runtime, RubyClass metaClass) {
+            super(runtime, metaClass);
+        }
+
+        private List<StorageLink> links = new LinkedList<StorageLink>();
+        public void addLink(StorageLink link) {
+            links.add(link);
+        }
+
+        public void replaceLinks(IRubyObject newObject) {
+            for(StorageLink sl : links) {
+                sl.replaceLinkWith(newObject);
+            }
+        }
+
+        // syck_badalias_initialize
+        @JRubyMethod
+        public static IRubyObject initialize(IRubyObject self, IRubyObject val) {
+            self.getInstanceVariables().setInstanceVariable("@name", val);
+            return self;
+        }
+
+        // syck_badalias_cmp
+        @JRubyMethod(name = "<=>")
+        public static IRubyObject cmp(IRubyObject alias1, IRubyObject alias2) {
+            IRubyObject str1 = alias1.getInstanceVariables().getInstanceVariable("@name");
+            IRubyObject str2 = alias2.getInstanceVariables().getInstanceVariable("@name");
+            return str1.callMethod(alias1.getRuntime().getCurrentContext(), "<=>", str2);
+        }
+    }
+
     public static class RubyIoStrRead implements IoStrRead {
         private IRubyObject port;
         public RubyIoStrRead(IRubyObject port) {
@@ -307,6 +386,9 @@ public class YechtYAML {
                 obj = RubyArray.newArray(runtime, dl.idx);
                 for(int i = 0; i < dl.idx; i++) {
                     IRubyObject _obj = (IRubyObject)n.seqRead(i);
+                    if(_obj instanceof PossibleLinkNode) {
+                        ((PossibleLinkNode)_obj).addLink(new ArrayStorageLink(obj, i, _obj));
+                    }
                     ((RubyArray)obj).store(i, _obj);
                 }
                 break;
@@ -365,6 +447,9 @@ public class YechtYAML {
                     }
                 
                     if(!skip_aset) {
+                        if(v instanceof PossibleLinkNode) {
+                            ((PossibleLinkNode)v).addLink(new HashStorageLink(obj, k, v));
+                        }
                         ((RubyHash)obj).fastASet(k, v);
                     }
                 }
@@ -386,6 +471,12 @@ public class YechtYAML {
 
         // rb_syck_load_handler
         public Object handle(Parser p, org.yecht.Node n) {
+//             System.err.println("load_handler for node: " + n.type_id + " with anchor: " + n.anchor);
+//             System.err.println(" id: " + n.id);
+//             if(n.id != null) {
+//                 System.err.println(" val: " + ((IRubyObject)n.id).inspect().toString());
+//             }
+
 //             System.err.println("rb_syck_load_handler(" + n + ")");
             YParser.Extra bonus = (YParser.Extra)p.bonus;
             IRubyObject resolver = bonus.resolver;
@@ -397,7 +488,10 @@ public class YechtYAML {
             
             IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
 //             System.err.println(" node_import -> " + obj);
-            if(n.id == null || !obj.isNil()) {
+            if(n.id != null && !obj.isNil()) {
+                if(n.id instanceof PossibleLinkNode) {
+                    ((PossibleLinkNode)n.id).replaceLinks(obj);
+                }
                 n.id = obj;
 //                 System.err.println(" -- LoadHandler, setting id, yay!");
             }
@@ -413,7 +507,7 @@ public class YechtYAML {
             ((RubyHash)bonus.data).fastASet(((RubyHash)bonus.data).rb_size(), obj);
 
 //             System.err.println(" -> rb_syck_load_handler=" + n.id);
-            return n.id;
+            return obj;
         }
     }
 
@@ -456,7 +550,7 @@ public class YechtYAML {
             IRubyObject anchor_name = runtime.newString(a);
             IRubyObject nm = runtime.newString("name");
             org.yecht.Node badanc = org.yecht.Node.newMap(nm, anchor_name);
-            badanc.type_id = "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias";
+            badanc.type_id = "tag:ruby.yaml.org,2002:object:YAML::Yecht::BadAlias";
             return badanc;
         }
     }
@@ -1351,23 +1445,6 @@ public class YechtYAML {
             self.getInstanceVariables().setInstanceVariable("@class", klass);
             self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
             return self;
-        }
-    }
-
-    public static class BadAlias {
-        // syck_badalias_initialize
-        @JRubyMethod
-        public static IRubyObject initialize(IRubyObject self, IRubyObject val) {
-            self.getInstanceVariables().setInstanceVariable("@name", val);
-            return self;
-        }
-
-        // syck_badalias_cmp
-        @JRubyMethod(name = "<=>")
-        public static IRubyObject cmp(IRubyObject alias1, IRubyObject alias2) {
-            IRubyObject str1 = alias1.getInstanceVariables().getInstanceVariable("@name");
-            IRubyObject str2 = alias2.getInstanceVariables().getInstanceVariable("@name");
-            return str1.callMethod(alias1.getRuntime().getCurrentContext(), "<=>", str2);
         }
     }
 

@@ -1,4 +1,4 @@
-// Output created by jacc on Mon Jul 20 16:45:10 CEST 2009
+// Output created by jacc on Tue Jul 21 13:26:28 CEST 2009
 
 package org.yecht;
 
@@ -3675,7 +3675,7 @@ class YechtParser implements YAMLGrammarTokens {
 
     private int yyr52() { // in_inline_seq : inline_seq_atom
         {
-                    yyrv = Node.newSeq( parser.addNode((Node)yysv[yysp-1]));
+                    yyrv = Node.newSeq(parser.addNode((Node)yysv[yysp-1]));
                 }
         yysv[yysp-=1] = yyrv;
         return 59;
@@ -3867,7 +3867,7 @@ class YechtParser implements YAMLGrammarTokens {
                     Node n = NULL_NODE( parser );
                     yyrv = Node.newMap( 
                         parser.addNode( (Node)yysv[yysp-1] ), 
-                        parser.addNode( n ) );
+                        parser.addNode( n ));
                 }
         yysv[yysp-=1] = yyrv;
         return yypinline_map_atom();

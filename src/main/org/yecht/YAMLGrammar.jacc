@@ -267,7 +267,7 @@ inline_seq		: '[' in_inline_seq ']'
 
 in_inline_seq   : inline_seq_atom
                 {
-                    $$ = Node.newSeq( parser.addNode((Node)$1));
+                    $$ = Node.newSeq(parser.addNode((Node)$1));
                 }
                 | in_inline_seq ',' inline_seq_atom
 				{ 
@@ -335,28 +335,12 @@ complex_key     : word_rep
 complex_value   : atom_or_empty
                 ;
 
-/* Default needs to be added to SyckSeq i think...
-				| '=' ':' atom
-				{
-					result = [ :DEFAULT, val[2] ]
-				}
-*/
-
 complex_mapping : complex_key ':' complex_value
                 {
                     $$ = Node.newMap( 
                         parser.addNode( (Node)$1 ), 
                         parser.addNode( (Node)$3 ) );
                 }
-/*
-				| '?' atom
-                {
-                    NULL_NODE( parser, n );
-                    $$ = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
-                        syck_hdlr_add_node( (SyckParser *)parser, n ) );
-                }
-*/
                 ;
 
 in_implicit_map : complex_mapping
@@ -420,7 +404,7 @@ inline_map_atom : atom
                     Node n = NULL_NODE( parser );
                     $$ = Node.newMap( 
                         parser.addNode( (Node)$1 ), 
-                        parser.addNode( n ) );
+                        parser.addNode( n ));
                 }
                 | basic_mapping
                 ;

@@ -15,16 +15,22 @@ public class Node {
     public Data data;
     public Object shortcut;
 
+    Node() {
+    }
+
     public String toString() {
-        switch(kind) {
-        case Str:
-            return "Str[id=" + id +", type=" + type_id +", val="+data+"]";
-        case Seq:
-            return "Seq[id=" + id +", type=" + type_id +", val="+data+"]";
-        case Map:
-            return "Map[id=" + id +", type=" + type_id +", val="+data+"]";
+        if(kind != null) {
+            switch(kind) {
+            case Str:
+                return "Str[id=" + id +", type=" + type_id +", val="+data+"]";
+            case Seq:
+                return "Seq[id=" + id +", type=" + type_id +", val="+data+"]";
+            case Map:
+                return "Map[id=" + id +", type=" + type_id +", val="+data+"]";
+            }
         }
-        return "other";
+
+        return "other[id=" + id +", type=" + type_id +", val="+data+"]";
     }
 
     // syck_replace_str

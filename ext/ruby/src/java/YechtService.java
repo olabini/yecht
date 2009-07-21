@@ -73,7 +73,7 @@ public class YechtService implements BasicLibraryService {
         cYObject.addReadWriteAttribute(ctx, "class");
         cYObject.addReadWriteAttribute(ctx, "ivars");
 
-        RubyClass cBadAlias = rb_yecht.defineClassUnder("BadAlias", runtime.getObject(), runtime.getObject().getAllocator());
+        RubyClass cBadAlias = rb_yecht.defineClassUnder("BadAlias", runtime.getObject(), YechtYAML.BadAlias.Allocator);
         cBadAlias.defineAnnotatedMethods(YechtYAML.BadAlias.class);
         cBadAlias.addReadWriteAttribute(ctx, "name");
         cBadAlias.includeModule(runtime.getComparable());
