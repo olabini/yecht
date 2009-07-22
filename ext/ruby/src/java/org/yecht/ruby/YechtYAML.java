@@ -105,6 +105,7 @@ public class YechtYAML {
             for(StorageLink sl : links) {
                 sl.replaceLinkWith(newObject);
             }
+            links.clear();
         }
 
         // syck_badalias_initialize
