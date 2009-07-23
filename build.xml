@@ -41,11 +41,6 @@
     </exec>
 
     <exec executable="re2j" failonerror="true">
-      <arg line="-o ${main.src.dir}/org/yecht/TokenScanner2.java"/>
-      <arg line="${main.src.dir}/org/yecht/TokenScanner2.re"/>
-    </exec>
-
-    <exec executable="re2j" failonerror="true">
       <arg line="-o ${main.src.dir}/org/yecht/ImplicitScanner.java"/>
       <arg line="${main.src.dir}/org/yecht/ImplicitScanner.re"/>
     </exec>
@@ -63,12 +58,6 @@
     </exec>
   </target>
 
-  <target name="jacc" depends="prepare" description="Standalone target that generates all our jacc based source files.">
-    <java jar="lib/jacc.jar" fork="true">
-      <arg line="${main.src.dir}/org/yecht/YAMLGrammar.jacc"/>
-    </java>
-  </target>
-
   <target name="compile" depends="prepare" description="Compile the source files for the project.">
     <javac destdir="${yecht.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
       <classpath refid="build.classpath"/>
@@ -77,7 +66,7 @@
     </javac>
   </target>
 
-  <target name="compile-with-gen" depends="re2j, jacc, jay" description="Compile the source files for the project.">
+  <target name="compile-with-gen" depends="re2j, jay" description="Compile the source files for the project.">
     <javac destdir="${yecht.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
       <classpath refid="build.classpath"/>
       <src path="${main.src.dir}"/>
@@ -159,6 +148,6 @@
     <delete file="-o ${main.src.dir}/org/yecht/TokenScanner.java" quiet="true"/>
     <delete file="-o ${main.src.dir}/org/yecht/ImplicitScanner.java" quiet="true"/>
     <delete file="-o ${main.src.dir}/org/yecht/BytecodeScanner.java" quiet="true"/>
-    <delete file="-o ${main.src.dir}/org/yecht/YechtParser.java" quiet="true"/>
+    <delete file="-o ${main.src.dir}/org/yecht/DefaultYAMLParser.java" quiet="true"/>
   </target>
 </project>

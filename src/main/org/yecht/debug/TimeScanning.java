@@ -31,7 +31,7 @@ public class TimeScanning {
             parser.errorHandler(null);
             parser.implicitTyping(true);
             parser.taguriExpansion(true);
-            DefaultYAMLParser.yyInput s = TokenScanner2.createScanner(parser);
+            DefaultYAMLParser.yyInput s = TokenScanner.createScanner(parser);
             int tok = -1;
             while(tok != 0) {
                 s.advance();

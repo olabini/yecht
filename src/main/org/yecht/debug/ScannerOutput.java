@@ -29,18 +29,19 @@ public class ScannerOutput {
         parser.errorHandler(null);
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
-        Scanner s = TokenScanner.createScanner(parser);
+        DefaultYAMLParser.yyInput s = TokenScanner.createScanner(parser);
         int tok = -1;
         Object lval = null;
         int indent = 0;
         while(tok != 0) {
-            tok = s.yylex();
-            if(tok == 7) {
+            s.advance();
+            tok = s.token();
+            if(tok == DefaultYAMLParser.YAML_IOPEN) {
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");
                 }
                 indent++;
-            } else if(tok == 5) {
+            } else if(tok == DefaultYAMLParser.YAML_IEND) {
                 indent--;
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");
@@ -51,7 +52,7 @@ public class ScannerOutput {
                 }
             }
 
-            Object lval2 = s.getLVal();
+            Object lval2 = s.value();
             System.out.print("tok: " + TokenScanner.tnames[tok]);
             if(lval != lval2) {
                 System.out.print(" lval: " + lval2);

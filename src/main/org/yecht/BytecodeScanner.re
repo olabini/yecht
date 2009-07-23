@@ -3,7 +3,7 @@ package org.yecht;
 import java.io.IOException;
 
 // Equivalent to bytecode.re
-public class BytecodeScanner implements YAMLGrammarTokens, Scanner {
+public class BytecodeScanner implements DefaultYAMLParser.yyInput {
    public final static int QUOTELEN = 128;
    private Parser parser;
 
@@ -12,24 +12,19 @@ public class BytecodeScanner implements YAMLGrammarTokens, Scanner {
 
    public BytecodeScanner(Parser parser) {
      this.parser = parser;
-     yylex();
    }
 
-   public Object getLVal() {
+   public Object value() {
      return lval;
    }
 
-   public int currentToken() {
+   public int token() {
      return currentToken;
    }
 
-   public int yylex() {
-     try {
-          currentToken = real_yylex();
-          return currentToken;
-     } catch(java.io.IOException ioe) {
-          throw new RuntimeException(ioe);
-     }
+   public boolean advance() throws java.io.IOException {
+     currentToken = real_yylex();
+     return currentToken == 0 ? false : true;
    }
 
    private void YYPOS(int n) {
@@ -163,7 +158,7 @@ DOC     {   if(lvl.status == LevelStatus.header) {
                 if(lvl.spaces > -1) {
                     parser.popLevel();
                     YYPOS(0);
-                    return YAML_IEND;
+                    return DefaultYAMLParser.YAML_IEND;
                 }
                 YYPOS(0);
                 return 0;
@@ -193,7 +188,7 @@ ANY     {   YYPOS(0);
 DOC | PAU   {   if(lvl.spaces > -1) {
                     parser.popLevel();
                     YYPOS(0);
-                    return YAML_IEND;
+                    return DefaultYAMLParser.YAML_IEND;
                 }
                 YYPOS(0);
                 return 0;
@@ -208,10 +203,10 @@ MAP     {   boolean complex = false;
             }
             CHK_NL(parser.cursor);
             if(complex) {
-                FORCE_NEXT_TOKEN( YAML_IOPEN );
+                FORCE_NEXT_TOKEN( DefaultYAMLParser.YAML_IOPEN );
                 return '?';
             }
-            return YAML_IOPEN;
+            return DefaultYAMLParser.YAML_IOPEN;
         }
 
 SEQ     {   boolean complex = false;
@@ -223,10 +218,10 @@ SEQ     {   boolean complex = false;
             }
             CHK_NL(parser.cursor);
             if(complex) {
-                FORCE_NEXT_TOKEN( YAML_IOPEN );
+                FORCE_NEXT_TOKEN( DefaultYAMLParser.YAML_IOPEN );
                 return '?';
             }
-            return YAML_IOPEN;
+            return DefaultYAMLParser.YAML_IOPEN;
         }
 
 END     {   if(lvl.status == LevelStatus.seq && lvl.ncount == 0) {
@@ -243,16 +238,16 @@ END     {   if(lvl.status == LevelStatus.seq && lvl.ncount == 0) {
             parser.popLevel();
             lvl = parser.currentLevel();
             if(lvl.status == LevelStatus.seq) {
-                FORCE_NEXT_TOKEN(YAML_INDENT);   
+                FORCE_NEXT_TOKEN(DefaultYAMLParser.YAML_INDENT);   
             } else if(lvl.status == LevelStatus.map) {
                 if(lvl.ncount % 2 == 1) {
                     FORCE_NEXT_TOKEN(':');
                 } else {
-                    FORCE_NEXT_TOKEN(YAML_INDENT);
+                    FORCE_NEXT_TOKEN(DefaultYAMLParser.YAML_INDENT);
                 }
             }
             CHK_NL(parser.cursor);
-            return YAML_IEND;
+            return DefaultYAMLParser.YAML_IEND;
         }
 
 SCA     {   if(ADD_BYTE_LEVEL(lvl, lvl.spaces + 1, LevelStatus.str)) {
@@ -267,7 +262,7 @@ ANC     {   if(ADD_BYTE_LEVEL(lvl, lvl.spaces + 1, LevelStatus.open)) {
             lval = getInline();
             parser.removeAnchor((String)lval);
             CHK_NL(parser.cursor);
-            return YAML_ANCHOR;
+            return DefaultYAMLParser.YAML_ANCHOR;
         }
 
 REF     {   if(ADD_BYTE_LEVEL(lvl, lvl.spaces + 1, LevelStatus.str)) {
@@ -276,7 +271,7 @@ REF     {   if(ADD_BYTE_LEVEL(lvl, lvl.spaces + 1, LevelStatus.str)) {
             lval = getInline();
             parser.popLevel();
             if( parser.buffer.buffer[parser.cursor - 1] == '\n') parser.cursor--;
-            return YAML_ALIAS;
+            return DefaultYAMLParser.YAML_ALIAS;
         }
 
 TAG     {   
@@ -288,7 +283,7 @@ TAG     {
             if(qstr.charAt(0) == '!' ) {
                 int qidx = qstr.length();
                 if(qidx == 1) {
-                    return YAML_ITRANSFER;
+                    return DefaultYAMLParser.YAML_ITRANSFER;
                 }
 
                 lvl = parser.currentLevel();
@@ -307,20 +302,20 @@ TAG     {
                         lval = qstr.substring(1);
                     }
                 }
-                return YAML_TRANSFER;
+                return DefaultYAMLParser.YAML_TRANSFER;
             }
             lval = qstr;
-            return YAML_TAGURI;
+            return DefaultYAMLParser.YAML_TAGURI;
         }
 
 COM     { mainLoopGoto = Comment; break gotoSomething; }
 
 LF      {   CHK_NL(parser.cursor);
             if(lvl.status == LevelStatus.seq) {
-                return YAML_INDENT; 
+                return DefaultYAMLParser.YAML_INDENT; 
             } else if(lvl.status == LevelStatus.map) {
                 if(lvl.ncount % 2 == 1) return ':';
-                else                    return YAML_INDENT;
+                else                    return DefaultYAMLParser.YAML_INDENT;
             }
             mainLoopGoto = Document; break gotoSomething;
         }
@@ -328,7 +323,7 @@ LF      {   CHK_NL(parser.cursor);
 NULL    {   if(lvl.spaces > -1) {
                     parser.popLevel();
                     YYPOS(0);
-                    return YAML_IEND;
+                    return DefaultYAMLParser.YAML_IEND;
             }
             YYPOS(0);
             return 0;
@@ -346,7 +341,7 @@ DIR        {   CHK_NL(parser.cursor);
            }
 
 ANY        {   parser.cursor = parser.token;
-               return YAML_DOCSEP;
+               return DefaultYAMLParser.YAML_DOCSEP;
            }
 */
 }
@@ -414,7 +409,7 @@ ANY     {   q.cat(parser.buffer.buffer[tok]);
                    if(parser.implicit_typing) {
                        ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
                    }          
-                   return YAML_PLAIN;
+                   return DefaultYAMLParser.YAML_PLAIN;
                }
                }
            }

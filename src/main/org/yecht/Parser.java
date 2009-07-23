@@ -287,8 +287,7 @@ public class Parser {
 
     private void yechtparse() {
         try {
-            new DefaultYAMLParser(this).yyparse(TokenScanner2.createScanner(this));
-            //        new YechtParser(this, TokenScanner2.createScanner(this)).parse();
+            new DefaultYAMLParser(this).yyparse(TokenScanner.createScanner(this));
         } catch(java.io.IOException e) {
             root = root_on_error;
         }
