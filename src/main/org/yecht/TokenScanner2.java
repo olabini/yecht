@@ -4,7 +4,7 @@ package org.yecht;
 import java.io.IOException;
 
 // Equivalent to token.re
-public class TokenScanner implements YAMLGrammarTokens, Scanner {
+public class TokenScanner2 implements YAMLGrammarTokens, Scanner {
    public final static int QUOTELEN = 1024;
    private Parser parser;
 
@@ -22,7 +22,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    public static Scanner createScanner(Parser parser) {
      switch(parser.input_type) {
        case YAML_UTF8:
-         return new TokenScanner(parser);
+         return new TokenScanner2(parser);
        case Bytecode_UTF8:
          return new BytecodeScanner(parser);
        case YAML_UTF16:
@@ -35,7 +35,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
      return null;
    }
 
-   public TokenScanner(Parser parser) {
+   public TokenScanner2(Parser parser) {
      this.parser = parser;
      yylex();
    }
@@ -137,22 +137,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
         return indt_len;       
    }
    
-   private final static int Header = 1;
-   private final static int Document = 2;
-   private final static int Directive = 3;
-   private final static int Plain = 4;
-   private final static int Plain2 = 5;
-   private final static int Plain3 = 6;
-   private final static int SingleQuote = 7;
-   private final static int SingleQuote2 = 8;
-   private final static int DoubleQuote = 9;
-   private final static int DoubleQuote2 = 10;
-   private final static int TransferMethod = 11;
-   private final static int TransferMethod2 = 12;
-   private final static int ScalarBlock = 13;
-   private final static int ScalarBlock2 = 14;
-
-   private final static String[] names = {"", "header", "document", "directive", "plain", "plain2", "plain3", "singleQuote", "singleQuote2", "doubleQuote", "doubleQuote2", "transferMethod", "transferMethod2", "scalarBlock", "scalarBlock2"};
    public final static String[] tnames = new String[126];
    static {
        tnames[0] = "ENDINPUT";
@@ -238,43 +222,34 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
        }
    }
 
-   private int real_yylex() throws IOException {
-     QuotedString q = null;
-     Level plvl = null;
-     int parentIndent = -1;
-     int keep_nl = -1;
-     int blockType = 0;
-     int nlDoWhat = 0;
-     int lastIndent = 0;
-     int forceIndent = -1;
-     int yyt = -1;
-     Level lvl = null;
-
-     int doc_level = 0;
-     if(parser.cursor == -1) {
-       parser.read();
-     }
-
-//     System.err.println("real_yylex(" + new String(parser.buffer.buffer, parser.buffer.start, parser.bufsize) + ")");
-//     System.out.println("real_yylex()");
-     if(parser.force_token != 0) {
-       int t = parser.force_token;
-       parser.force_token = 0;
-       return t;
-     }
-
-
-        int mainLoopGoto = Header;
-        if( parser.lineptr != parser.cursor ) {
-            mainLoopGoto = Document;
+    private int real_yylex() throws IOException {
+        if(parser.cursor == -1) {
+            parser.read();
         }
 
-        do {
-            gotoSomething: while(true) {
-//                System.out.println("" + names[mainLoopGoto] + "()");
-                switch(mainLoopGoto) {
-                case Header: {
-                    parser.token = parser.cursor;
+//     System.err.println("real_yylex(" + new String(parser.buffer.buffer, parser.buffer.start, parser.bufsize) + ")");
+//        System.out.println("real_yylex()");
+        if(parser.force_token != 0) {
+            int t = parser.force_token;
+            parser.force_token = 0;
+            return t;
+        }
+
+
+
+        if(parser.lineptr != parser.cursor) {
+            return document(0);
+        } else {
+            return header();
+        }
+    }
+
+    private int header() throws java.io.IOException {
+//        System.out.println("header()");
+        Level lvl;
+        int doc_level = 0;
+        while(true) {
+            parser.token = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
@@ -306,7 +281,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 }
             case 3:
                 {   YYPOS(0);
-                        mainLoopGoto = Document; break gotoSomething;
+                        return document(doc_level);
                     }
             case 4:
                 yyaccept = 0;
@@ -317,8 +292,9 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 }
             case 5:
                 ++parser.cursor;
-                {   eatComments(); 
-                        mainLoopGoto = Header; break gotoSomething;
+                {   
+                        eatComments(); 
+                        break;
                     }
             case 7:
                 ++parser.cursor;
@@ -358,7 +334,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
                           doc_level = parser.cursor - parser.lineptr;
                         }
-                        mainLoopGoto = Header; break gotoSomething;
+                        break;
                     }
             case 11:
                 yych = parser.buffer.buffer[++parser.cursor];
@@ -372,7 +348,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 {gotoPoint = 16; continue gotoNext;}
             case 13:
                 {   doc_level = parser.cursor - parser.lineptr;
-                        mainLoopGoto = Header; break gotoSomething;
+                        break;
                     }
             case 14:
                 yych = parser.buffer.buffer[++parser.cursor];
@@ -432,9 +408,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 ++parser.cursor;
             case 24:
                 {   lvl = parser.currentLevel();
-                        if(lvl.status == LevelStatus.header) {
-                          mainLoopGoto = Header; break gotoSomething;
-                        } else {
+                        if(lvl.status != LevelStatus.header) {
                           if(lvl.spaces > -1) {
                             parser.popLevel();
                             YYPOS(0);
@@ -443,6 +417,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                           YYPOS(0);
                           return 0; 
                         }
+                        break;
                     }
             case 25:
                 ++parser.cursor;
@@ -478,7 +453,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 { lvl = parser.currentLevel();
                       if(lvl.status == LevelStatus.header) {
                           YYPOS(3);
-                          mainLoopGoto = Directive; break gotoSomething;
+                          return directive();
                       } else {
                           if(lvl.spaces > -1) {
                               parser.popLevel();
@@ -506,14 +481,18 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             }
         }
 
-                }
-                case Document: {
-                    lvl = parser.currentLevel();
-                    if(lvl.status == LevelStatus.header) {
-                      lvl.status = LevelStatus.doc;
-                    }
+        }
+    }
 
-                    parser.token = parser.cursor;
+   private int document(int doc_level) throws java.io.IOException {
+//        System.out.println("document()");
+       while(true) {
+           Level lvl = parser.currentLevel();
+           if(lvl.status == LevelStatus.header) {
+               lvl.status = LevelStatus.doc;
+           }
+
+           parser.token = parser.cursor;
 
 
         int gotoPoint = -1;
@@ -582,33 +561,27 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         doc_level = 0;
 
                         /* XXX: Comment lookahead */
-                        if( parser.buffer.buffer[parser.cursor] == '#' ) {
-                            mainLoopGoto = Document; break gotoSomething;
-                        }
-
                         /* Ignore indentation inside inlines */
-                        if( lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap ) {
-                            mainLoopGoto = Document; break gotoSomething;
-                        }
-
-                        /* Check for open indent */
-                        if(lvl.spaces > indt_len) {
-                           parser.popLevel();
-                           YYPOS(0);
-                           return YAML_IEND;
-                        }
-                        if(lvl.spaces < indt_len) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
+                        if(parser.buffer.buffer[parser.cursor] != '#' && lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                            /* Check for open indent */
+                            if(lvl.spaces > indt_len) {
+                                parser.popLevel();
+                                YYPOS(0);
+                                return YAML_IEND;
+                            }
+                            if(lvl.spaces < indt_len) {
+                                if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                                    parser.addLevel(indt_len, LevelStatus.doc);
+                                    return YAML_IOPEN;
+                                }
                             } else {
-                                parser.addLevel(indt_len, LevelStatus.doc);
-                                return YAML_IOPEN;
+                                if(indt_len == -1) {
+                                    return 0;
+                                }
+                                return YAML_INDENT;
                             }
                         }
-                        if(indt_len == -1) {
-                            return 0;
-                        }
-                        return YAML_INDENT;
+                        break;
                     }
             case 39:
                 ++parser.cursor;
@@ -619,47 +592,47 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             case 40:
                 {   
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            return plain();
                         }
-                        mainLoopGoto = Plain; break gotoSomething;
+                        break;
                     }
             case 41:
                 ++parser.cursor;
                 {   
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            lvl = parser.currentLevel();
+                            parser.addLevel(lvl.spaces + 1, LevelStatus.iseq);
+                            return parser.buffer.buffer[parser.token];
                         }
-                        lvl = parser.currentLevel();
-                        parser.addLevel(lvl.spaces + 1, LevelStatus.iseq);
-                        return parser.buffer.buffer[parser.token];
+                        break;                    
                     }
             case 43:
                 ++parser.cursor;
                 {
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            lvl = parser.currentLevel();
+                            parser.addLevel(lvl.spaces + 1, LevelStatus.imap);
+                            return parser.buffer.buffer[parser.token];
                         }
-                        lvl = parser.currentLevel();
-                        parser.addLevel(lvl.spaces + 1, LevelStatus.imap);
-                        return parser.buffer.buffer[parser.token];
+                        break;
                     }
             case 45:
                 ++parser.cursor;
@@ -824,33 +797,35 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 }
             case 51:
                 ++parser.cursor;
-                {   mainLoopGoto = TransferMethod; break gotoSomething; }
+                {   return transferMethod(); }
             case 53:
                 ++parser.cursor;
                 {   
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            return singleQuote(); 
                         }
-                        mainLoopGoto = SingleQuote; break gotoSomething; }
+                        break;
+                    }
             case 55:
                 ++parser.cursor;
                 {   
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            return doubleQuote();
                         }
-                        mainLoopGoto = DoubleQuote; break gotoSomething; }
+                        break;
+                    }
             case 57:
                 yyaccept = 1;
                 yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
@@ -874,16 +849,17 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 }
             case 58:
                 ++parser.cursor;
-                {   eatComments(); 
-                        mainLoopGoto = Document; break gotoSomething;
+                {   
+                        eatComments(); 
+                        break;
                     }
             case 60:
                 ++parser.cursor;
                 yych = parser.buffer.buffer[parser.cursor];
                 {gotoPoint = 66; continue gotoNext;}
             case 61:
-                {   
-                        mainLoopGoto = Document; break gotoSomething;
+                {
+                        break;
                     }
             case 62:
                 ++parser.cursor;
@@ -944,7 +920,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 {   if(isNewline(parser.cursor - 1) != 0) {
                             parser.cursor--;
                         }
-                        mainLoopGoto = ScalarBlock; break gotoSomething;
+                        return scalarBlock();
                     }
             case 72:
                 ++parser.cursor;
@@ -1034,16 +1010,16 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             case 77:
                 {   
                         if(lvl.spaces < doc_level) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel(doc_level, LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
+                            return YAML_ALIAS;
                         }
-                        lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
-                        return YAML_ALIAS;
+                        break;
                     }
             case 78:
                 ++parser.cursor;
@@ -1132,23 +1108,23 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             case 82:
                 {   
                         if(lvl.spaces < (parser.token - parser.lineptr)) {
-                            if(lvl.status == LevelStatus.iseq || lvl.status == LevelStatus.imap) {
-                                mainLoopGoto = Document; break gotoSomething;
-                            } else {
+                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
                                 parser.addLevel((parser.token - parser.lineptr), LevelStatus.doc);
                                 YYPOS(0);
                                 return YAML_IOPEN;
                             }
+                        } else {
+                            parser.force_token = YAML_IOPEN;
+                            if( parser.buffer.buffer[parser.cursor] == '#' || isNewline(parser.cursor) != 0 || isNewline(parser.cursor-1) != 0) {
+                                parser.cursor--;
+                                parser.addLevel(parser.token + 1 - parser.lineptr, LevelStatus.seq);
+                            } else /* spaces followed by content uses the space as indentation */
+                            {
+                                parser.addLevel(parser.cursor - parser.lineptr, LevelStatus.seq);
+                            }
+                            return parser.buffer.buffer[parser.token];
                         }
-                        parser.force_token = YAML_IOPEN;
-                        if( parser.buffer.buffer[parser.cursor] == '#' || isNewline(parser.cursor) != 0 || isNewline(parser.cursor-1) != 0) {
-                            parser.cursor--;
-                            parser.addLevel(parser.token + 1 - parser.lineptr, LevelStatus.seq);
-                        } else /* spaces followed by content uses the space as indentation */
-                        {
-                            parser.addLevel(parser.cursor - parser.lineptr, LevelStatus.seq);
-                        }
-                        return parser.buffer.buffer[parser.token];
+                        break;
                     }
             case 83:
                 ++parser.cursor;
@@ -1210,11 +1186,13 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             }
         }
 
+       }
+   }
 
-
-                }
-                case Directive: {
-                    parser.toktmp = parser.cursor;
+   private int directive() throws java.io.IOException {
+//        System.out.println("directive()");
+       while(true) {
+           parser.toktmp = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
@@ -1324,7 +1302,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 yych = parser.buffer.buffer[parser.cursor];
                 {gotoPoint = 103; continue gotoNext;}
             case 100:
-                {   mainLoopGoto = Directive; break gotoSomething; }
+                {  break; }
             case 101:
                 yych = parser.buffer.buffer[++parser.cursor];
                 {gotoPoint = 98; continue gotoNext;}
@@ -1586,30 +1564,35 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 default:    {gotoPoint = 109; continue gotoNext;}
                 }
             case 109:
-                {   mainLoopGoto = Directive; break gotoSomething; }
+                {  break; }
             }
         }
 
-                }
-                case Plain:
-                    q = new QuotedString();
+       }
+   }
 
-                    parser.cursor = parser.token;
-                    plvl = parser.currentLevel();
+   private int plain() throws java.io.IOException {
+//        System.out.println("plain()");
+       QuotedString q = new QuotedString();
 
-                    {
-                        Level lvl_deep = parser.currentLevel();
-                        parentIndent = lvl_deep.spaces;
-                        if(lvl_deep.status == LevelStatus.seq || ((parentIndent == parser.cursor - parser.lineptr) && lvl_deep.status != LevelStatus.map)) {
-                            parser.lvl_idx--;
-                            Level lvl_over = parser.currentLevel();
-                            parentIndent = lvl_over.spaces;
-                            parser.lvl_idx++;
-                        }
-                    }
-                case Plain2:
-                    parser.token = parser.cursor;
-                case Plain3: {
+       parser.cursor = parser.token;
+       Level plvl = parser.currentLevel();
+
+       Level lvl_deep = parser.currentLevel();
+       int parentIndent = lvl_deep.spaces;
+       if(lvl_deep.status == LevelStatus.seq || ((parentIndent == parser.cursor - parser.lineptr) && lvl_deep.status != LevelStatus.map)) {
+           parser.lvl_idx--;
+           Level lvl_over = parser.currentLevel();
+           parentIndent = lvl_over.spaces;
+           parser.lvl_idx++;
+       }
+
+       boolean plain3 = false;
+
+       while(true) {
+           parser.token = parser.cursor;
+           do {
+               plain3 = false;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
@@ -1661,8 +1644,6 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
                           indt_len = parser.cursor - parser.lineptr;
                         }
-                        
-                        lvl = parser.currentLevel();
 
                         if(indt_len <= parentIndent) {
                             RETURN_IMPLICIT(q);
@@ -1684,8 +1665,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                                 q.cat('\n');
                             }
                         }
-
-                        mainLoopGoto = Plain2; break gotoSomething;
+                        break;
                     }
             case 114:
                 ++parser.cursor;
@@ -1696,7 +1676,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             case 115:
                 {
                         q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                        mainLoopGoto = Plain2; break gotoSomething;
+                        break;
                     }
             case 116:
                 yyaccept = 1;
@@ -1725,13 +1705,12 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                                 parser.cursor--;
                             }
                             q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                            mainLoopGoto = Plain2; break gotoSomething;
                         } else {
                             q.plain_is_inl();
+                            RETURN_IMPLICIT(q);
+                            return YAML_PLAIN;
                         }
-
-                        RETURN_IMPLICIT(q);
-                        return YAML_PLAIN;
+                        break;
                     }
             case 120:
                 ++parser.cursor;
@@ -1742,13 +1721,12 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                                 parser.cursor--;
                             }
                             q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                            mainLoopGoto = Plain2; break gotoSomething;
                         } else {
                             q.plain_is_inl();
+                            RETURN_IMPLICIT(q);
+                            return YAML_PLAIN;
                         }
-
-                        RETURN_IMPLICIT(q);
-                        return YAML_PLAIN;
+                        break;
                     }
             case 122:
                 ++parser.cursor;
@@ -1757,11 +1735,11 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 default:    {gotoPoint = 123; continue gotoNext;}
                 }
             case 123:
-                {   if(q.idx == 0) {
-                            mainLoopGoto = Plain2; break gotoSomething;
-                        } else {
-                            mainLoopGoto = Plain3; break gotoSomething;
+                {   
+                        if(q.idx != 0) {
+                            plain3 = true;
                         }
+                        break;
                     }
             case 124:
                 ++parser.cursor;
@@ -1777,7 +1755,8 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 {gotoPoint = 115; continue gotoNext;}
             case 128:
                 ++parser.cursor;
-                {   eatComments(); 
+                {   
+                        eatComments(); 
                         RETURN_IMPLICIT(q);
                         return YAML_PLAIN;
                     }
@@ -1791,13 +1770,13 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                                 parser.cursor--;
                             }
                             q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                            mainLoopGoto = Plain2; break gotoSomething;
                         } else {
                             q.plain_is_inl();
+                            RETURN_IMPLICIT(q);
+                            return YAML_PLAIN;
                         }
 
-                        RETURN_IMPLICIT(q);
-                        return YAML_PLAIN;
+                        break;
                     }
             case 132:
                 ++parser.cursor;
@@ -1864,30 +1843,44 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             }
         }
 
-}
-                case SingleQuote:
-                    q = new QuotedString();
-                case SingleQuote2: {
-                    parser.token = parser.cursor;
+
+//               if(!plain3) {
+//                  System.out.println("plain2()");
+//               } else {
+//                  System.out.println("plain3()");
+//               }
+           } while(plain3);
+       }
+   }
+
+   private int doubleQuote() throws java.io.IOException {
+//        System.out.println("doubleQuote()");
+       int keep_nl = 1;
+       QuotedString q = new QuotedString();
+       while(true) {
+           parser.token = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
+        int yyaccept = 0;
         gotoNext: while(gotoPoint != -2) {
             int currentGoto = gotoPoint; gotoPoint = -2;
             switch(currentGoto) {
             case -1: 
-                if ((parser.limit - parser.cursor) < 2) parser.read();
+                if ((parser.limit - parser.cursor) < 4) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
                 switch (yych) {
-                case 0x00:    {gotoPoint = 152; continue gotoNext;}
+                case 0x00:    {gotoPoint = 151; continue gotoNext;}
                 case '\n':    {gotoPoint = 146; continue gotoNext;}
                 case '\r':    {gotoPoint = 148; continue gotoNext;}
-                case '\'':    {gotoPoint = 150; continue gotoNext;}
-                default:    {gotoPoint = 153; continue gotoNext;}
+                case '"':    {gotoPoint = 153; continue gotoNext;}
+                case '\\':    {gotoPoint = 150; continue gotoNext;}
+                default:    {gotoPoint = 154; continue gotoNext;}
                 }
             case 146:
+                yyaccept = 0;
                 yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
-                {gotoPoint = 157; continue gotoNext;}
+                {gotoPoint = 168; continue gotoNext;}
             case 147:
                 {
                         // GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN )
@@ -1914,53 +1907,75 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         }
 
                         int nl_count = 0;
-                        lvl = parser.currentLevel();
+                        Level lvl = parser.currentLevel();
                         if(lvl.status != LevelStatus.str) {
                             parser.addLevel(indt_len, LevelStatus.str);
                         } else if(indt_len < lvl.spaces) {
                             // Error!
                         }
 
-                        while(parser.token < parser.cursor) {
-                          int nl_len = newlineLen(parser.token++);
-                          if(nl_len > 0) {
-                            nl_count++;
-                            parser.token += (nl_len - 1);
-                          }
-                        }
-                        if(nl_count <= 1) {
-                            q.cat(' ');
-                        } else {
-                            for(int i = 0; i < nl_count - 1; i++) {
-                                q.cat('\n');
+                        if(keep_nl == 1) {
+                            while(parser.token < parser.cursor) {
+                                int nl_len = newlineLen(parser.token++);
+                                if(nl_len > 0) {
+                                    nl_count++;
+                                    parser.token += (nl_len - 1);
+                                }
+                            }
+                            if(nl_count <= 1) {
+                                q.cat(' ');
+                            } else {
+                                for(int i = 0; i < nl_count - 1; i++) {
+                                    q.cat('\n');
+                                }
                             }
                         }
 
-                        mainLoopGoto = SingleQuote2; break gotoSomething;
+                        keep_nl = 1;
+                        break;
                     }
             case 148:
                 ++parser.cursor;
                 switch ((yych = parser.buffer.buffer[parser.cursor])) {
-                case '\n':    {gotoPoint = 156; continue gotoNext;}
+                case '\n':    {gotoPoint = 167; continue gotoNext;}
                 default:    {gotoPoint = 149; continue gotoNext;}
                 }
             case 149:
                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
-                        mainLoopGoto = SingleQuote2; break gotoSomething;
+                        break;
                     }
             case 150:
-                ++parser.cursor;
-                switch ((yych = parser.buffer.buffer[parser.cursor])) {
-                case '\'':    {gotoPoint = 154; continue gotoNext;}
-                default:    {gotoPoint = 151; continue gotoNext;}
+                yyaccept = 1;
+                yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
+                switch (yych) {
+                case '\n':    {gotoPoint = 158; continue gotoNext;}
+                case '\r':    {gotoPoint = 160; continue gotoNext;}
+                case ' ':    {gotoPoint = 155; continue gotoNext;}
+                case '"':
+                case '0':
+                case '\\':
+                case 'a':
+                case 'b':
+                case 'e':
+                case 'f':
+                case 'n':
+                case 'r':
+                case 't':
+                case 'v':    {gotoPoint = 162; continue gotoNext;}
+                case 'x':    {gotoPoint = 161; continue gotoNext;}
+                default:    {gotoPoint = 149; continue gotoNext;}
                 }
             case 151:
+                ++parser.cursor;
+            case 152:
                 {   
                         Node n = Node.allocStr();
-                        lvl = parser.currentLevel();
+                        Level lvl = parser.currentLevel();
+
                         if(lvl.status == LevelStatus.str) {
                             parser.popLevel();
                         }
+
                         if(parser.taguri_expansion) {
                             n.type_id = Parser.taguri(YAML.DOMAIN, "str");
                         } else {
@@ -1969,75 +1984,163 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         Data.Str dd = (Data.Str)n.data;
                         dd.ptr = Pointer.create(q.str, 0);
                         dd.len = q.idx;
-                        dd.style = ScalarStyle.OneQuote;
+                        dd.style = ScalarStyle.TwoQuote;
                         lval = n;
-                        return YAML_PLAIN; 
+                        return YAML_PLAIN;
                     }
-            case 152:
-                yych = parser.buffer.buffer[++parser.cursor];
-                {gotoPoint = 151; continue gotoNext;}
             case 153:
                 yych = parser.buffer.buffer[++parser.cursor];
-                {gotoPoint = 149; continue gotoNext;}
+                {gotoPoint = 152; continue gotoNext;}
             case 154:
+                yych = parser.buffer.buffer[++parser.cursor];
+                {gotoPoint = 149; continue gotoNext;}
+            case 155:
                 ++parser.cursor;
-                {   q.cat('\'');
-                        mainLoopGoto = SingleQuote2; break gotoSomething;
-                    }
-            case 156:
-                parser.marker = ++parser.cursor;
-                if (parser.limit <= parser.cursor) parser.read();
+                if ((parser.limit - parser.cursor) < 2) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
-            case 157:
                 switch (yych) {
-                case '\n':
-                case ' ':    {gotoPoint = 156; continue gotoNext;}
-                case '\r':    {gotoPoint = 158; continue gotoNext;}
-                default:    {gotoPoint = 147; continue gotoNext;}
+                case '\n':    {gotoPoint = 158; continue gotoNext;}
+                case '\r':    {gotoPoint = 160; continue gotoNext;}
+                case ' ':    {gotoPoint = 155; continue gotoNext;}
+                default:    {gotoPoint = 157; continue gotoNext;}
+                }
+            case 157:
+                parser.cursor = parser.marker;
+                if (yyaccept == 0) {
+                    {gotoPoint = 147; continue gotoNext;}
+                } else {
+                    {gotoPoint = 149; continue gotoNext;}
                 }
             case 158:
                 ++parser.cursor;
+                {   keep_nl = 0;
+                        parser.cursor--;
+                        break;
+                    }
+            case 160:
+                yych = parser.buffer.buffer[++parser.cursor];
+                switch (yych) {
+                case '\n':    {gotoPoint = 158; continue gotoNext;}
+                default:    {gotoPoint = 157; continue gotoNext;}
+                }
+            case 161:
+                yych = parser.buffer.buffer[++parser.cursor];
+                switch (yych) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
+                case 'a':
+                case 'b':
+                case 'c':
+                case 'd':
+                case 'e':
+                case 'f':    {gotoPoint = 164; continue gotoNext;}
+                default:    {gotoPoint = 157; continue gotoNext;}
+                }
+            case 162:
+                ++parser.cursor;
+                {   
+                        byte ch = parser.buffer.buffer[parser.cursor-1];
+                        q.cat(escapeSeq(ch));
+                        break;
+                    }
+            case 164:
+                yych = parser.buffer.buffer[++parser.cursor];
+                switch (yych) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
+                case 'a':
+                case 'b':
+                case 'c':
+                case 'd':
+                case 'e':
+                case 'f':    {gotoPoint = 165; continue gotoNext;}
+                default:    {gotoPoint = 157; continue gotoNext;}
+                }
+            case 165:
+                ++parser.cursor;
+                {    
+                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.token+2, 2, "ISO-8859-1"), 16).intValue());
+                        break;
+                    }
+            case 167:
+                yyaccept = 0;
+                parser.marker = ++parser.cursor;
+                if (parser.limit <= parser.cursor) parser.read();
+                yych = parser.buffer.buffer[parser.cursor];
+            case 168:
+                switch (yych) {
+                case '\n':
+                case ' ':    {gotoPoint = 167; continue gotoNext;}
+                case '\r':    {gotoPoint = 169; continue gotoNext;}
+                default:    {gotoPoint = 147; continue gotoNext;}
+                }
+            case 169:
+                ++parser.cursor;
                 if (parser.limit <= parser.cursor) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
                 switch (yych) {
-                case '\n':    {gotoPoint = 156; continue gotoNext;}
-                default:    {gotoPoint = 159; continue gotoNext;}
+                case '\n':    {gotoPoint = 167; continue gotoNext;}
+                default:    {gotoPoint = 157; continue gotoNext;}
                 }
-            case 159:
-                parser.cursor = parser.marker;
-                {gotoPoint = 147; continue gotoNext;}
             }
         }
 
-}                    
-                case DoubleQuote:
-                   keep_nl = 1;
-                   q = new QuotedString();
-                case DoubleQuote2: {
-                   parser.token = parser.cursor;
+       }
+   }
+
+   private int singleQuote() throws java.io.IOException {
+//        System.out.println("singleQuote()");
+       QuotedString q = new QuotedString();
+       while(true) {
+           parser.token = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
-        int yyaccept = 0;
         gotoNext: while(gotoPoint != -2) {
             int currentGoto = gotoPoint; gotoPoint = -2;
             switch(currentGoto) {
             case -1: 
-                if ((parser.limit - parser.cursor) < 4) parser.read();
+                if ((parser.limit - parser.cursor) < 2) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
                 switch (yych) {
-                case 0x00:    {gotoPoint = 167; continue gotoNext;}
-                case '\n':    {gotoPoint = 162; continue gotoNext;}
-                case '\r':    {gotoPoint = 164; continue gotoNext;}
-                case '"':    {gotoPoint = 169; continue gotoNext;}
-                case '\\':    {gotoPoint = 166; continue gotoNext;}
-                default:    {gotoPoint = 170; continue gotoNext;}
+                case 0x00:    {gotoPoint = 178; continue gotoNext;}
+                case '\n':    {gotoPoint = 172; continue gotoNext;}
+                case '\r':    {gotoPoint = 174; continue gotoNext;}
+                case '\'':    {gotoPoint = 176; continue gotoNext;}
+                default:    {gotoPoint = 179; continue gotoNext;}
                 }
-            case 162:
-                yyaccept = 0;
+            case 172:
                 yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
-                {gotoPoint = 184; continue gotoNext;}
-            case 163:
+                {gotoPoint = 183; continue gotoNext;}
+            case 173:
                 {
                         // GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN )
                         int indent = parser.token;
@@ -2063,75 +2166,52 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         }
 
                         int nl_count = 0;
-                        lvl = parser.currentLevel();
+                        Level lvl = parser.currentLevel();
                         if(lvl.status != LevelStatus.str) {
                             parser.addLevel(indt_len, LevelStatus.str);
                         } else if(indt_len < lvl.spaces) {
                             // Error!
                         }
 
-                        if(keep_nl == 1) {
-                            while(parser.token < parser.cursor) {
-                                int nl_len = newlineLen(parser.token++);
-                                if(nl_len > 0) {
-                                    nl_count++;
-                                    parser.token += (nl_len - 1);
-                                }
-                            }
-                            if(nl_count <= 1) {
-                                q.cat(' ');
-                            } else {
-                                for(int i = 0; i < nl_count - 1; i++) {
-                                    q.cat('\n');
-                                }
+                        while(parser.token < parser.cursor) {
+                          int nl_len = newlineLen(parser.token++);
+                          if(nl_len > 0) {
+                            nl_count++;
+                            parser.token += (nl_len - 1);
+                          }
+                        }
+                        if(nl_count <= 1) {
+                            q.cat(' ');
+                        } else {
+                            for(int i = 0; i < nl_count - 1; i++) {
+                                q.cat('\n');
                             }
                         }
-
-                        keep_nl = 1;
-                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                        break;
                     }
-            case 164:
+            case 174:
                 ++parser.cursor;
                 switch ((yych = parser.buffer.buffer[parser.cursor])) {
-                case '\n':    {gotoPoint = 183; continue gotoNext;}
-                default:    {gotoPoint = 165; continue gotoNext;}
+                case '\n':    {gotoPoint = 182; continue gotoNext;}
+                default:    {gotoPoint = 175; continue gotoNext;}
                 }
-            case 165:
+            case 175:
                 {   q.cat(parser.buffer.buffer[parser.cursor-1]);
-                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                        break;
                     }
-            case 166:
-                yyaccept = 1;
-                yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
-                switch (yych) {
-                case '\n':    {gotoPoint = 174; continue gotoNext;}
-                case '\r':    {gotoPoint = 176; continue gotoNext;}
-                case ' ':    {gotoPoint = 171; continue gotoNext;}
-                case '"':
-                case '0':
-                case '\\':
-                case 'a':
-                case 'b':
-                case 'e':
-                case 'f':
-                case 'n':
-                case 'r':
-                case 't':
-                case 'v':    {gotoPoint = 178; continue gotoNext;}
-                case 'x':    {gotoPoint = 177; continue gotoNext;}
-                default:    {gotoPoint = 165; continue gotoNext;}
-                }
-            case 167:
+            case 176:
                 ++parser.cursor;
-            case 168:
+                switch ((yych = parser.buffer.buffer[parser.cursor])) {
+                case '\'':    {gotoPoint = 180; continue gotoNext;}
+                default:    {gotoPoint = 177; continue gotoNext;}
+                }
+            case 177:
                 {   
                         Node n = Node.allocStr();
-                        lvl = parser.currentLevel();
-
+                        Level lvl = parser.currentLevel();
                         if(lvl.status == LevelStatus.str) {
                             parser.popLevel();
                         }
-
                         if(parser.taguri_expansion) {
                             n.type_id = Parser.taguri(YAML.DOMAIN, "str");
                         } else {
@@ -2140,140 +2220,54 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         Data.Str dd = (Data.Str)n.data;
                         dd.ptr = Pointer.create(q.str, 0);
                         dd.len = q.idx;
-                        dd.style = ScalarStyle.TwoQuote;
+                        dd.style = ScalarStyle.OneQuote;
                         lval = n;
-                        return YAML_PLAIN;
+                        return YAML_PLAIN; 
                     }
-            case 169:
-                yych = parser.buffer.buffer[++parser.cursor];
-                {gotoPoint = 168; continue gotoNext;}
-            case 170:
-                yych = parser.buffer.buffer[++parser.cursor];
-                {gotoPoint = 165; continue gotoNext;}
-            case 171:
-                ++parser.cursor;
-                if ((parser.limit - parser.cursor) < 2) parser.read();
-                yych = parser.buffer.buffer[parser.cursor];
-                switch (yych) {
-                case '\n':    {gotoPoint = 174; continue gotoNext;}
-                case '\r':    {gotoPoint = 176; continue gotoNext;}
-                case ' ':    {gotoPoint = 171; continue gotoNext;}
-                default:    {gotoPoint = 173; continue gotoNext;}
-                }
-            case 173:
-                parser.cursor = parser.marker;
-                if (yyaccept == 0) {
-                    {gotoPoint = 163; continue gotoNext;}
-                } else {
-                    {gotoPoint = 165; continue gotoNext;}
-                }
-            case 174:
-                ++parser.cursor;
-                {   keep_nl = 0;
-                        parser.cursor--;
-                        mainLoopGoto = DoubleQuote2; break gotoSomething;
-                    }
-            case 176:
-                yych = parser.buffer.buffer[++parser.cursor];
-                switch (yych) {
-                case '\n':    {gotoPoint = 174; continue gotoNext;}
-                default:    {gotoPoint = 173; continue gotoNext;}
-                }
-            case 177:
-                yych = parser.buffer.buffer[++parser.cursor];
-                switch (yych) {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                case 'A':
-                case 'B':
-                case 'C':
-                case 'D':
-                case 'E':
-                case 'F':
-                case 'a':
-                case 'b':
-                case 'c':
-                case 'd':
-                case 'e':
-                case 'f':    {gotoPoint = 180; continue gotoNext;}
-                default:    {gotoPoint = 173; continue gotoNext;}
-                }
             case 178:
-                ++parser.cursor;
-                {   
-                        byte ch = parser.buffer.buffer[parser.cursor-1];
-                        q.cat(escapeSeq(ch));
-                        mainLoopGoto = DoubleQuote2; break gotoSomething;
-                    }
-            case 180:
                 yych = parser.buffer.buffer[++parser.cursor];
-                switch (yych) {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                case 'A':
-                case 'B':
-                case 'C':
-                case 'D':
-                case 'E':
-                case 'F':
-                case 'a':
-                case 'b':
-                case 'c':
-                case 'd':
-                case 'e':
-                case 'f':    {gotoPoint = 181; continue gotoNext;}
-                default:    {gotoPoint = 173; continue gotoNext;}
-                }
-            case 181:
+                {gotoPoint = 177; continue gotoNext;}
+            case 179:
+                yych = parser.buffer.buffer[++parser.cursor];
+                {gotoPoint = 175; continue gotoNext;}
+            case 180:
                 ++parser.cursor;
-                {    
-                        q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.token+2, 2, "ISO-8859-1"), 16).intValue());
-                        mainLoopGoto = DoubleQuote2; break gotoSomething;
+                {   q.cat('\'');
+                        break;
                     }
-            case 183:
-                yyaccept = 0;
+            case 182:
                 parser.marker = ++parser.cursor;
                 if (parser.limit <= parser.cursor) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
-            case 184:
+            case 183:
                 switch (yych) {
                 case '\n':
-                case ' ':    {gotoPoint = 183; continue gotoNext;}
-                case '\r':    {gotoPoint = 185; continue gotoNext;}
-                default:    {gotoPoint = 163; continue gotoNext;}
+                case ' ':    {gotoPoint = 182; continue gotoNext;}
+                case '\r':    {gotoPoint = 184; continue gotoNext;}
+                default:    {gotoPoint = 173; continue gotoNext;}
                 }
-            case 185:
+            case 184:
                 ++parser.cursor;
                 if (parser.limit <= parser.cursor) parser.read();
                 yych = parser.buffer.buffer[parser.cursor];
                 switch (yych) {
-                case '\n':    {gotoPoint = 183; continue gotoNext;}
-                default:    {gotoPoint = 173; continue gotoNext;}
+                case '\n':    {gotoPoint = 182; continue gotoNext;}
+                default:    {gotoPoint = 185; continue gotoNext;}
                 }
+            case 185:
+                parser.cursor = parser.marker;
+                {gotoPoint = 173; continue gotoNext;}
             }
         }
 
-}                
-                case TransferMethod:
-                    q = new QuotedString();
-                case TransferMethod2: {
-                    parser.toktmp = parser.cursor;
+       }
+   }
+
+   private int transferMethod() throws java.io.IOException {
+//        System.out.println("transferMethod()");
+       QuotedString q = new QuotedString();
+       while(true) {
+           parser.toktmp = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
@@ -2300,7 +2294,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                             return YAML_ITRANSFER;
                         }
 
-                        lvl = parser.currentLevel();
+                        Level lvl = parser.currentLevel();
 
                         /*
                          * URL Prefixing
@@ -2341,7 +2335,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             case 193:
                 {   
                         q.cat(parser.buffer.buffer[parser.cursor-1]);
-                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                        break;
                     }
             case 194:
                 yych = parser.buffer.buffer[(parser.marker = ++parser.cursor)];
@@ -2398,7 +2392,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 {  
                         byte ch = parser.buffer.buffer[parser.cursor-1];
                         q.cat(escapeSeq(ch));
-                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                        break;
                     }
             case 200:
                 yych = parser.buffer.buffer[++parser.cursor];
@@ -2431,7 +2425,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 ++parser.cursor;
                 {   
                         q.cat((byte)Integer.valueOf(new String(parser.buffer.buffer, parser.toktmp+2, 2, "ISO-8859-1"), 16).intValue());
-                        mainLoopGoto = TransferMethod2; break gotoSomething;
+                        break;
                     }
             case 203:
                 ++parser.cursor;
@@ -2445,36 +2439,39 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             }
         }
 
-}
-                case ScalarBlock:
-                    q = new QuotedString();
-                    blockType = 0;
-                    nlDoWhat = 0;
-                    lastIndent = 0;
-                    forceIndent = -1;
-                    yyt = parser.token;
-                    lvl = parser.currentLevel();
-                    parentIndent = -1;
-                    switch(parser.buffer.buffer[yyt]) {
-                        case '|': blockType = YAML.BLOCK_LIT; break;
-                        case '>': blockType = YAML.BLOCK_FOLD; break;
-                    }
+       }
+   }
 
-                    while( ++yyt <= parser.cursor ) {
-                        if(parser.buffer.buffer[yyt] == '-') {
-                           nlDoWhat = YAML.NL_CHOMP;
-                        } else if(parser.buffer.buffer[yyt] == '+' ) {
-                           nlDoWhat = YAML.NL_KEEP;
-                        } else if(Character.isDigit((char)parser.buffer.buffer[yyt])) {
-                           forceIndent = (char)parser.buffer.buffer[yyt] - '0';
-                        }
-                     }
+   private int scalarBlock() throws java.io.IOException {
+//        System.out.println("scalarBlock()");
+       QuotedString q = new QuotedString();
+       q.str[0] = 0;
 
-                     q.str[0] = 0;
-                     parser.token = parser.cursor;
+       int lastIndent = 0;
+       int parentIndent = -1;
+       int blockType = 0;
+       int nlDoWhat = 0;
+       int forceIndent = -1;
+       int yyt = parser.token;
+       Level lvl = parser.currentLevel();
 
-                case ScalarBlock2: {
-                     parser.token = parser.cursor;
+       switch(parser.buffer.buffer[yyt]) {
+           case '|': blockType = YAML.BLOCK_LIT; break;
+           case '>': blockType = YAML.BLOCK_FOLD; break;
+       }
+
+       while( ++yyt <= parser.cursor ) {
+           if(parser.buffer.buffer[yyt] == '-') {
+               nlDoWhat = YAML.NL_CHOMP;
+           } else if(parser.buffer.buffer[yyt] == '+' ) {
+               nlDoWhat = YAML.NL_KEEP;
+           } else if(Character.isDigit((char)parser.buffer.buffer[yyt])) {
+               forceIndent = (char)parser.buffer.buffer[yyt] - '0';
+           }
+       }
+
+       while(true) {
+           parser.token = parser.cursor;
 
         int gotoPoint = -1;
         byte yych = (byte) 0;
@@ -2579,8 +2576,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                             RETURN_YAML_BLOCK(q, blockType, nlDoWhat);
                             return YAML_BLOCK;
                         }
-
-                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                        break;
                     }
             case 209:
                 ++parser.cursor;
@@ -2590,7 +2586,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 }
             case 210:
                 {   q.cat(parser.buffer.buffer[parser.token]);
-                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                        break;
                     }
             case 211:
                 ++parser.cursor;
@@ -2601,7 +2597,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         } else {
                             q.cat(parser.buffer.buffer[parser.token]);
                         }
-                        mainLoopGoto = ScalarBlock2; break gotoSomething;
+                        break;
                     }
             case 213:
                 ++parser.cursor;
@@ -2656,8 +2652,8 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                         } else {
                             q.cat(parser.buffer.buffer[parser.token]);
                             parser.cursor = parser.token + 1;
-                            mainLoopGoto = ScalarBlock2; break gotoSomething;
                         }
+                        break;
                     }
             case 222:
                 ++parser.cursor;
@@ -2696,11 +2692,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
             }
         }
 
-}
-                }
-                return 0;                
-            }
-        } while(true);
+       }
    }
 
    private byte escapeSeq(byte ch) {
@@ -2719,7 +2711,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
    }
 
    private void eatComments() throws IOException {
-     comment: while(true) {
+     while(true) {
        parser.token = parser.cursor;
 
         int gotoPoint = -1;
@@ -2752,8 +2744,7 @@ public class TokenScanner implements YAMLGrammarTokens, Scanner {
                 default:    {gotoPoint = 234; continue gotoNext;}
                 }
             case 234:
-                {   continue comment; 
-                    }
+                { break; }
             case 235:
                 yych = parser.buffer.buffer[++parser.cursor];
                 {gotoPoint = 234; continue gotoNext;}

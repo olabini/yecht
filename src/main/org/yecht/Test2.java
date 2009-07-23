@@ -20,7 +20,7 @@ public class Test2 {
             System.arraycopy(buffer, 0, input, read, currRead);
             read += currRead;
         }
-        int times = 100;
+        int times = 10000;
         long before = System.currentTimeMillis();
         for(int i=0; i<times; i++) {
             Parser parser = Parser.newParser();

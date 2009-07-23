@@ -3,7 +3,7 @@ package org.yecht;
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-public class ScannerOutput {
+public class ScannerOutput2 {
     public static void main(String[] args) throws Exception {
         String filename = args[0];
         int len = 8000;
@@ -27,7 +27,7 @@ public class ScannerOutput {
         parser.errorHandler(null);
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
-        Scanner s = TokenScanner.createScanner(parser);
+        Scanner s = TokenScanner2.createScanner(parser);
         int tok = -1;
         Object lval = null;
         int indent = 0;
@@ -50,7 +50,7 @@ public class ScannerOutput {
             }
 
             Object lval2 = s.getLVal();
-            System.out.print("tok: " + TokenScanner.tnames[tok]);
+            System.out.print("tok: " + TokenScanner2.tnames[tok]);
             if(lval != lval2) {
                 System.out.print(" lval: " + lval2);
                 lval = lval2;

@@ -41,6 +41,11 @@
     </exec>
 
     <exec executable="re2j" failonerror="true">
+      <arg line="-o ${main.src.dir}/org/yecht/TokenScanner2.java"/>
+      <arg line="${main.src.dir}/org/yecht/TokenScanner2.re"/>
+    </exec>
+
+    <exec executable="re2j" failonerror="true">
       <arg line="-o ${main.src.dir}/org/yecht/ImplicitScanner.java"/>
       <arg line="${main.src.dir}/org/yecht/ImplicitScanner.re"/>
     </exec>
