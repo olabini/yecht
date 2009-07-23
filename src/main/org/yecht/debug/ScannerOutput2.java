@@ -1,7 +1,9 @@
-package org.yecht;
+package org.yecht.debug;
 
 import java.io.InputStream;
 import java.io.FileInputStream;
+
+import org.yecht.*;
 
 public class ScannerOutput2 {
     public static void main(String[] args) throws Exception {
@@ -27,18 +29,19 @@ public class ScannerOutput2 {
         parser.errorHandler(null);
         parser.implicitTyping(true);
         parser.taguriExpansion(true);
-        Scanner s = TokenScanner2.createScanner(parser);
+        DefaultYAMLParser.yyInput s = TokenScanner2.createScanner(parser);
         int tok = -1;
         Object lval = null;
         int indent = 0;
-        while(tok != YAMLGrammarTokens.ENDINPUT) {
-            tok = s.yylex();
-            if(tok == YAMLGrammarTokens.YAML_IOPEN) {
+        while(tok != 0) {
+            s.advance();
+            tok = s.token();
+            if(tok == DefaultYAMLParser.YAML_IOPEN) {
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");
                 }
                 indent++;
-            } else if(tok == YAMLGrammarTokens.YAML_IEND) {
+            } else if(tok == DefaultYAMLParser.YAML_IEND) {
                 indent--;
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");
@@ -49,7 +52,7 @@ public class ScannerOutput2 {
                 }
             }
 
-            Object lval2 = s.getLVal();
+            Object lval2 = s.value();
             System.out.print("tok: " + TokenScanner2.tnames[tok]);
             if(lval != lval2) {
                 System.out.print(" lval: " + lval2);

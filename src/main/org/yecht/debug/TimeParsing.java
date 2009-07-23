@@ -1,9 +1,11 @@
-package org.yecht;
+package org.yecht.debug;
 
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-public class Test1 {
+import org.yecht.*;
+
+public class TimeParsing {
     public static void main(String[] args) throws Exception {
         String filename = args[0];
         int len = 8000;

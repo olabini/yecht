@@ -1,9 +1,11 @@
-package org.yecht;
+package org.yecht.debug;
 
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-public class Test2 {
+import org.yecht.*;
+
+public class TimeScanning {
     public static void main(String[] args) throws Exception {
         String filename = args[0];
         int len = 8000;
@@ -29,12 +31,13 @@ public class Test2 {
             parser.errorHandler(null);
             parser.implicitTyping(true);
             parser.taguriExpansion(true);
-            Scanner s = TokenScanner.createScanner(parser);
+            DefaultYAMLParser.yyInput s = TokenScanner2.createScanner(parser);
             int tok = -1;
-            while(tok != YAMLGrammarTokens.ENDINPUT) {
-                tok = s.yylex();
-//                 Object lval = s.getLVal();
-//                 System.err.println("tok: " + TokenScanner.tnames[tok] + " lval: " + lval);
+            while(tok != 0) {
+                s.advance();
+                tok = s.token();
+                //                 Object lval = s.getLVal();
+                //                 System.err.println("tok: " + TokenScanner.tnames[tok] + " lval: " + lval);
             }
         }
         long after = System.currentTimeMillis();

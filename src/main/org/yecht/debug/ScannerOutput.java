@@ -1,7 +1,9 @@
-package org.yecht;
+package org.yecht.debug;
 
 import java.io.InputStream;
 import java.io.FileInputStream;
+
+import org.yecht.*;
 
 public class ScannerOutput {
     public static void main(String[] args) throws Exception {
@@ -31,14 +33,14 @@ public class ScannerOutput {
         int tok = -1;
         Object lval = null;
         int indent = 0;
-        while(tok != YAMLGrammarTokens.ENDINPUT) {
+        while(tok != 0) {
             tok = s.yylex();
-            if(tok == YAMLGrammarTokens.YAML_IOPEN) {
+            if(tok == 7) {
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");
                 }
                 indent++;
-            } else if(tok == YAMLGrammarTokens.YAML_IEND) {
+            } else if(tok == 5) {
                 indent--;
                 for(int i=0; i < indent; i++) {
                     System.out.print(" ");

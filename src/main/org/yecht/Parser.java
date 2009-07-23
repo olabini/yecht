@@ -286,7 +286,12 @@ public class Parser {
     }
 
     private void yechtparse() {
-        new YechtParser(this, TokenScanner.createScanner(this)).parse();
+        try {
+            new DefaultYAMLParser(this).yyparse(TokenScanner2.createScanner(this));
+            //        new YechtParser(this, TokenScanner2.createScanner(this)).parse();
+        } catch(java.io.IOException e) {
+            root = root_on_error;
+        }
     }
 
     // syck_hdlr_add_node
