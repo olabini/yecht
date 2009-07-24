@@ -15,16 +15,13 @@ public class DefaultYAMLParser {
 %left               '[' ']' '{' '}' ',' '?'
 
 %%
-doc     : atom
-        {
+doc     : atom {
            parser.root = parser.addNode((Node)$1);
         }
-        | YAML_DOCSEP atom_or_empty
-        {
+        | YAML_DOCSEP atom_or_empty {
            parser.root = parser.addNode((Node)$2);
         }
-        |
-        {
+        | {
            parser.eof = true;
         }
         ;
@@ -34,18 +31,15 @@ atom	: word_rep
         ;
 
 ind_rep : struct_rep
-        | YAML_TRANSFER ind_rep
-        { 
+        | YAML_TRANSFER ind_rep { 
             Parser.addTransfer((String)$1, (Node)$2, parser.taguri_expansion);
             $$ = $2;
         }
-        | YAML_TAGURI ind_rep
-        {
+        | YAML_TAGURI ind_rep {
             Parser.addTransfer((String)$1, (Node)$2, false);
             $$ = $2;
         }
-        | YAML_ANCHOR ind_rep
-        { 
+        | YAML_ANCHOR ind_rep { 
            /*
             * _Anchors_: The language binding must keep a separate symbol table
             * for anchors.  The actual ID in the symbol table is returned to the
@@ -53,8 +47,7 @@ ind_rep : struct_rep
             */
            $$ = parser.addAnchor((String)$1, (Node)$2 );
         }
-        | indent_open ind_rep indent_flex_end
-        {
+        | indent_open ind_rep indent_flex_end {
            $$ = $2;
         }
         ;
@@ -63,12 +56,10 @@ atom_or_empty   : atom
                 | empty
                 ;
 
-empty           : indent_open empty indent_end
-                {
+empty           : indent_open empty indent_end {
                     $$ = $2;
                 }
-                |
-                {
+                | {
                     Node n = NULL_NODE( parser );
                     $$ = n;
                 }

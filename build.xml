@@ -56,6 +56,13 @@
       <arg line="${main.src.dir}/org/yecht/DefaultYAMLParser.y"/>
       <arg line="parser/skeleton.java"/>
     </exec>
+
+<!--     <exec executable="ruby" failonerror="true" output="${main.src.dir}/org/yecht/DefaultYAMLParser.java"> -->
+<!--       <arg line="parser/optimize_parser.rb"/> -->
+<!--       <arg line="${main.src.dir}/org/yecht/DefaultYAMLParser.java.1"/> -->
+<!--     </exec> -->
+
+<!--     <delete file="${main.src.dir}/org/yecht/DefaultYAMLParser.java.1" quiet="true"/> -->
   </target>
 
   <target name="compile" depends="prepare" description="Compile the source files for the project.">
@@ -145,9 +152,9 @@
   </target>
 
   <target name="full-clean" depends="clean" description="clean almost everything">
-    <delete file="-o ${main.src.dir}/org/yecht/TokenScanner.java" quiet="true"/>
-    <delete file="-o ${main.src.dir}/org/yecht/ImplicitScanner.java" quiet="true"/>
-    <delete file="-o ${main.src.dir}/org/yecht/BytecodeScanner.java" quiet="true"/>
-    <delete file="-o ${main.src.dir}/org/yecht/DefaultYAMLParser.java" quiet="true"/>
+    <delete file="${main.src.dir}/org/yecht/TokenScanner.java" quiet="true"/>
+    <delete file="${main.src.dir}/org/yecht/ImplicitScanner.java" quiet="true"/>
+    <delete file="${main.src.dir}/org/yecht/BytecodeScanner.java" quiet="true"/>
+    <delete file="${main.src.dir}/org/yecht/DefaultYAMLParser.java" quiet="true"/>
   </target>
 </project>

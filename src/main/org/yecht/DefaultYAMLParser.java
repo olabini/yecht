@@ -228,106 +228,6 @@ public class DefaultYAMLParser {
     "YAML_IOPEN","YAML_INDENT","YAML_IEND",
     };
 
-//t  /** printable rules for debugging.
-//t    */
-//t  protected static final String [] yyRule = {
-//t    "$accept : doc",
-//t    "doc : atom",
-//t    "doc : YAML_DOCSEP atom_or_empty",
-//t    "doc :",
-//t    "atom : word_rep",
-//t    "atom : ind_rep",
-//t    "ind_rep : struct_rep",
-//t    "ind_rep : YAML_TRANSFER ind_rep",
-//t    "ind_rep : YAML_TAGURI ind_rep",
-//t    "ind_rep : YAML_ANCHOR ind_rep",
-//t    "ind_rep : indent_open ind_rep indent_flex_end",
-//t    "atom_or_empty : atom",
-//t    "atom_or_empty : empty",
-//t    "empty : indent_open empty indent_end",
-//t    "empty :",
-//t    "empty : YAML_ITRANSFER empty",
-//t    "empty : YAML_TRANSFER empty",
-//t    "empty : YAML_TAGURI empty",
-//t    "empty : YAML_ANCHOR empty",
-//t    "indent_open : YAML_IOPEN",
-//t    "indent_open : indent_open YAML_INDENT",
-//t    "indent_end : YAML_IEND",
-//t    "indent_sep : YAML_INDENT",
-//t    "indent_flex_end : YAML_IEND",
-//t    "indent_flex_end : indent_sep indent_flex_end",
-//t    "word_rep : YAML_TRANSFER word_rep",
-//t    "word_rep : YAML_TAGURI word_rep",
-//t    "word_rep : YAML_ITRANSFER word_rep",
-//t    "word_rep : YAML_ANCHOR word_rep",
-//t    "word_rep : YAML_ALIAS",
-//t    "word_rep : YAML_WORD",
-//t    "word_rep : YAML_PLAIN",
-//t    "word_rep : indent_open word_rep indent_flex_end",
-//t    "struct_rep : YAML_BLOCK",
-//t    "struct_rep : implicit_seq",
-//t    "struct_rep : inline_seq",
-//t    "struct_rep : implicit_map",
-//t    "struct_rep : inline_map",
-//t    "implicit_seq : indent_open top_imp_seq indent_end",
-//t    "implicit_seq : indent_open in_implicit_seq indent_end",
-//t    "basic_seq : '-' atom_or_empty",
-//t    "top_imp_seq : YAML_TRANSFER indent_sep in_implicit_seq",
-//t    "top_imp_seq : YAML_TRANSFER top_imp_seq",
-//t    "top_imp_seq : YAML_TAGURI indent_sep in_implicit_seq",
-//t    "top_imp_seq : YAML_TAGURI top_imp_seq",
-//t    "top_imp_seq : YAML_ANCHOR indent_sep in_implicit_seq",
-//t    "top_imp_seq : YAML_ANCHOR top_imp_seq",
-//t    "in_implicit_seq : basic_seq",
-//t    "in_implicit_seq : in_implicit_seq indent_sep basic_seq",
-//t    "in_implicit_seq : in_implicit_seq indent_sep",
-//t    "inline_seq : '[' in_inline_seq ']'",
-//t    "inline_seq : '[' ']'",
-//t    "in_inline_seq : inline_seq_atom",
-//t    "in_inline_seq : in_inline_seq ',' inline_seq_atom",
-//t    "inline_seq_atom : atom",
-//t    "inline_seq_atom : basic_mapping",
-//t    "implicit_map : indent_open top_imp_map indent_end",
-//t    "implicit_map : indent_open in_implicit_map indent_end",
-//t    "top_imp_map : YAML_TRANSFER indent_sep in_implicit_map",
-//t    "top_imp_map : YAML_TRANSFER top_imp_map",
-//t    "top_imp_map : YAML_TAGURI indent_sep in_implicit_map",
-//t    "top_imp_map : YAML_TAGURI top_imp_map",
-//t    "top_imp_map : YAML_ANCHOR indent_sep in_implicit_map",
-//t    "top_imp_map : YAML_ANCHOR top_imp_map",
-//t    "complex_key : word_rep",
-//t    "complex_key : '?' atom indent_sep",
-//t    "complex_value : atom_or_empty",
-//t    "complex_mapping : complex_key ':' complex_value",
-//t    "in_implicit_map : complex_mapping",
-//t    "in_implicit_map : in_implicit_map indent_sep basic_seq",
-//t    "in_implicit_map : in_implicit_map indent_sep complex_mapping",
-//t    "in_implicit_map : in_implicit_map indent_sep",
-//t    "basic_mapping : atom ':' atom_or_empty",
-//t    "inline_map : '{' in_inline_map '}'",
-//t    "inline_map : '{' '}'",
-//t    "in_inline_map : inline_map_atom",
-//t    "in_inline_map : in_inline_map ',' inline_map_atom",
-//t    "inline_map_atom : atom",
-//t    "inline_map_atom : basic_mapping",
-//t    };
-//t
-//t  /** debugging support, requires the package <tt>jay.yydebug</tt>.
-//t      Set to <tt>null</tt> to suppress debugging messages.
-//t    */
-//t  protected jay.yydebug.yyDebug yydebug;
-//t
-//t  /** index-checked interface to {@link #yyNames}.
-//t      @param token single character or <tt>%token</tt> value.
-//t      @return token name or <tt>[illegal]</tt> or <tt>[unknown]</tt>.
-//t    */
-//t  public static final String yyName (int token) {
-//t    if (token < 0 || token > yyNames.length) return "[illegal]";
-//t    String name;
-//t    if ((name = yyNames[token]) != null) return name;
-//t    return "[unknown]";
-//t  }
-//t
 
   /** must be implemented by a scanner object to supply input to the parser.
       Nested for convenience, does not depend on parser class.
@@ -404,20 +304,15 @@ public class DefaultYAMLParser {
       }
       yyStates[yyTop] = yyState;
       yyVals[yyTop] = yyVal;
-//t      if (yydebug != null) yydebug.push(yyState, yyVal);
 
       yyDiscarded: for (;;) {	// discarding a token does not change stack
         int yyN;
         if ((yyN = yyDefRed[yyState]) == 0) {	// else [default] reduce (yyN)
           if (yyToken < 0) {
             yyToken = yyLex.advance() ? yyLex.token() : 0;
-//t            if (yydebug != null)
-//t              yydebug.lex(yyState, yyToken, yyName(yyToken), yyLex.value());
           }
           if ((yyN = yySindex[yyState]) != 0 && (yyN += yyToken) >= 0
               && yyN < yyTable.length && yyCheck[yyN] == yyToken) {
-//t            if (yydebug != null)
-//t              yydebug.shift(yyState, yyTable[yyN], yyErrorFlag > 0 ? yyErrorFlag-1 : 0);
             yyState = yyTable[yyN];		// shift to yyN
             yyVal = yyLex.value();
             yyToken = -1;
@@ -432,7 +327,6 @@ public class DefaultYAMLParser {
   
             case 0:
               yyerror("syntax error");
-//t              if (yydebug != null) yydebug.error("syntax error");
   
             case 1: case 2:
               yyErrorFlag = 3;
@@ -440,67 +334,59 @@ public class DefaultYAMLParser {
                 if ((yyN = yySindex[yyStates[yyTop]]) != 0
                     && (yyN += yyErrorCode) >= 0 && yyN < yyTable.length
                     && yyCheck[yyN] == yyErrorCode) {
-//t                  if (yydebug != null)
-//t                    yydebug.shift(yyStates[yyTop], yyTable[yyN], 3);
                   yyState = yyTable[yyN];
                   yyVal = yyLex.value();
                   continue yyLoop;
                 }
-//t                if (yydebug != null) yydebug.pop(yyStates[yyTop]);
               } while (-- yyTop >= 0);
-//t              if (yydebug != null) yydebug.reject();
               yyerror("irrecoverable syntax error");
   
             case 3:
               if (yyToken == 0) {
-//t                if (yydebug != null) yydebug.reject();
                 yyerror("irrecoverable syntax error at end-of-file");
               }
-//t              if (yydebug != null)
-//t                yydebug.discard(yyState, yyToken, yyName(yyToken), yyLex.value());
               yyToken = -1;
               continue yyDiscarded;		// leave stack alone
             }
         }
         int yyV = yyTop + 1-yyLen[yyN];
-//t        if (yydebug != null)
-//t          yydebug.reduce(yyState, yyStates[yyV-1], yyN, yyRule[yyN], yyLen[yyN]);
         yyVal = yyDefault(yyV > yyTop ? null : yyVals[yyV]);
         switch (yyN) {
+// ACTIONS_BEGIN
 case 1:
-					// line 19 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 18 "src/main/org/yecht/DefaultYAMLParser.y"
   {
            parser.root = parser.addNode((Node)yyVals[0+yyTop]);
         }
   break;
 case 2:
-					// line 23 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 21 "src/main/org/yecht/DefaultYAMLParser.y"
   {
            parser.root = parser.addNode((Node)yyVals[0+yyTop]);
         }
   break;
 case 3:
-					// line 27 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 24 "src/main/org/yecht/DefaultYAMLParser.y"
   {
            parser.eof = true;
         }
   break;
 case 7:
-					// line 38 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 34 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
             Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
             yyVal = yyVals[0+yyTop];
         }
   break;
 case 8:
-					// line 43 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 38 "src/main/org/yecht/DefaultYAMLParser.y"
   {
             Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], false);
             yyVal = yyVals[0+yyTop];
         }
   break;
 case 9:
-					// line 48 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 42 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
            /*
             * _Anchors_: The language binding must keep a separate symbol table
@@ -511,26 +397,26 @@ case 9:
         }
   break;
 case 10:
-					// line 57 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 50 "src/main/org/yecht/DefaultYAMLParser.y"
   {
            yyVal = yyVals[-1+yyTop];
         }
   break;
 case 13:
-					// line 67 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 59 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 14:
-					// line 71 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 62 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     Node n = NULL_NODE( parser );
                     yyVal = n;
                 }
   break;
 case 15:
-					// line 76 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 67 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                    if(parser.implicit_typing)
                    {
@@ -540,21 +426,21 @@ case 15:
                 }
   break;
 case 16:
-					// line 84 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 75 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 17:
-					// line 89 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 80 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], false);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 18:
-					// line 94 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 85 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                    /*
                     * _Anchors_: The language binding must keep a separate symbol table
@@ -565,21 +451,21 @@ case 18:
                 }
   break;
 case 25:
-					// line 127 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 118 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                yyVal = yyVals[0+yyTop];
             }
   break;
 case 26:
-					// line 132 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 123 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], false);
                yyVal = yyVals[0+yyTop];
             }
   break;
 case 27:
-					// line 137 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 128 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                if(parser.implicit_typing)
                {
@@ -589,13 +475,13 @@ case 27:
             }
   break;
 case 28:
-					// line 145 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 136 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                yyVal = parser.addAnchor((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop] );
             }
   break;
 case 29:
-					// line 149 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 140 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                /*
                 * _Aliases_: The anchor symbol table is scanned for the anchor name.
@@ -605,7 +491,7 @@ case 29:
             }
   break;
 case 30:
-					// line 157 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 148 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                Node n = (Node)yyVals[0+yyTop];
                if(parser.taguri_expansion) {
@@ -617,175 +503,175 @@ case 30:
             }
   break;
 case 32:
-					// line 168 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 159 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                yyVal = yyVals[-1+yyTop];
             }
   break;
 case 38:
-					// line 188 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 179 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 39:
-					// line 192 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 183 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 40:
-					// line 198 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 189 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = parser.addNode((Node) yyVals[0+yyTop]);
                 }
   break;
 case 41:
-					// line 204 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 195 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 42:
-					// line 209 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 200 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 43:
-					// line 214 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 205 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop], false);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 44:
-					// line 219 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 210 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], false);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 45:
-					// line 224 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 215 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = parser.addAnchor((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop] );
                 }
   break;
 case 46:
-					// line 228 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 219 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = parser.addAnchor((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop] );
                 }
   break;
 case 47:
-					// line 234 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 225 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = Node.newSeq(yyVals[0+yyTop]);
                 }
   break;
 case 48:
-					// line 238 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 229 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     ((Node)yyVals[-2+yyTop]).seqAdd(yyVals[0+yyTop]);
                     yyVal = yyVals[-2+yyTop];
 				}
   break;
 case 49:
-					// line 243 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 234 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = yyVals[-1+yyTop];
 				}
   break;
 case 50:
-					// line 252 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 243 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 51:
-					// line 256 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 247 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = Node.allocSeq();
                 }
   break;
 case 52:
-					// line 262 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 253 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = Node.newSeq(parser.addNode((Node)yyVals[0+yyTop]));
                 }
   break;
 case 53:
-					// line 266 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 257 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     ((Node)yyVals[-2+yyTop]).seqAdd(parser.addNode((Node)yyVals[0+yyTop]));
                     yyVal = yyVals[-2+yyTop];
 				}
   break;
 case 56:
-					// line 280 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 271 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     applySeqInMap(parser, (Node)yyVals[-1+yyTop]);
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 57:
-					// line 285 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 276 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     applySeqInMap(parser, (Node)yyVals[-1+yyTop]);
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 58:
-					// line 292 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 283 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 59:
-					// line 297 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 288 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], parser.taguri_expansion);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 60:
-					// line 302 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 293 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop], false);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 61:
-					// line 307 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 298 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     Parser.addTransfer((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop], false);
                     yyVal = yyVals[0+yyTop];
                 }
   break;
 case 62:
-					// line 312 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 303 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = parser.addAnchor((String)yyVals[-2+yyTop], (Node)yyVals[0+yyTop]);
                 }
   break;
 case 63:
-					// line 316 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 307 "src/main/org/yecht/DefaultYAMLParser.y"
   { 
                     yyVal = parser.addAnchor((String)yyVals[-1+yyTop], (Node)yyVals[0+yyTop]);
                 }
   break;
 case 65:
-					// line 323 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 314 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 67:
-					// line 332 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 323 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = Node.newMap( 
                         parser.addNode( (Node)yyVals[-2+yyTop] ), 
@@ -793,7 +679,7 @@ case 67:
                 }
   break;
 case 69:
-					// line 341 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 332 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     if ( ((Node)yyVals[-2+yyTop]).shortcut == null )
                     {
@@ -807,7 +693,7 @@ case 69:
                 }
   break;
 case 70:
-					// line 353 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 344 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     applySeqInMap( parser, (Node)yyVals[-2+yyTop] );
                     ((Node)yyVals[-2+yyTop]).mapUpdate((Node)yyVals[0+yyTop]);
@@ -816,13 +702,13 @@ case 70:
                 }
   break;
 case 71:
-					// line 360 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 351 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 72:
-					// line 369 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 360 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = Node.newMap( 
                         parser.addNode( (Node)yyVals[-2+yyTop] ), 
@@ -830,19 +716,19 @@ case 72:
                 }
   break;
 case 73:
-					// line 377 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 368 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = yyVals[-1+yyTop];
                 }
   break;
 case 74:
-					// line 381 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 372 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     yyVal = Node.allocMap();
                 }
   break;
 case 76:
-					// line 388 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 379 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     ((Node)yyVals[-2+yyTop]).mapUpdate((Node)yyVals[0+yyTop]);
                     yyVals[0+yyTop] = null;
@@ -850,7 +736,7 @@ case 76:
 				}
   break;
 case 77:
-					// line 396 "src/main/org/yecht/DefaultYAMLParser.y"
+					// line 387 "src/main/org/yecht/DefaultYAMLParser.y"
   {
                     Node n = NULL_NODE( parser );
                     yyVal = Node.newMap( 
@@ -858,21 +744,18 @@ case 77:
                         parser.addNode( n ));
                 }
   break;
-					// line 863 "-"
+					// line 749 "-"
+// ACTIONS_END
         }
         yyTop -= yyLen[yyN];
         yyState = yyStates[yyTop];
         int yyM = yyLhs[yyN];
         if (yyState == 0 && yyM == 0) {
-//t          if (yydebug != null) yydebug.shift(0, yyFinal);
           yyState = yyFinal;
           if (yyToken < 0) {
             yyToken = yyLex.advance() ? yyLex.token() : 0;
-//t            if (yydebug != null)
-//t               yydebug.lex(yyState, yyToken,yyName(yyToken), yyLex.value());
           }
           if (yyToken == 0) {
-//t            if (yydebug != null) yydebug.accept(yyVal);
             return yyVal;
           }
           continue yyLoop;
@@ -882,13 +765,13 @@ case 77:
           yyState = yyTable[yyN];
         else
           yyState = yyDgoto[yyM];
-//t        if (yydebug != null) yydebug.shift(yyStates[yyTop], yyState);
         continue yyLoop;
       }
     }
   }
 
-					// line 405 "src/main/org/yecht/DefaultYAMLParser.y"
+// ACTION_BODIES
+					// line 396 "src/main/org/yecht/DefaultYAMLParser.y"
 
     private Parser parser;
     public DefaultYAMLParser(Parser parser) {
@@ -920,4 +803,4 @@ case 77:
         TokenScanner.error(msg, parser);
     }
 }
-					// line 925 "-"
+					// line 808 "-"

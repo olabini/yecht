@@ -47,28 +47,6 @@
  yyNames-strings
 .    };
 .
-t  /** printable rules for debugging.
-t    */
-t  protected static final String [] yyRule = {
- yyRule-strings
-t    };
-t
-t  /** debugging support, requires the package <tt>jay.yydebug</tt>.
-t      Set to <tt>null</tt> to suppress debugging messages.
-t    */
-t  protected jay.yydebug.yyDebug yydebug;
-t
-t  /** index-checked interface to {@link #yyNames}.
-t      @param token single character or <tt>%token</tt> value.
-t      @return token name or <tt>[illegal]</tt> or <tt>[unknown]</tt>.
-t    */
-t  public static final String yyName (int token) {
-t    if (token < 0 || token > yyNames.length) return "[illegal]";
-t    String name;
-t    if ((name = yyNames[token]) != null) return name;
-t    return "[unknown]";
-t  }
-t
 .
 .  /** must be implemented by a scanner object to supply input to the parser.
 .      Nested for convenience, does not depend on parser class.
@@ -147,20 +125,15 @@ t    this.yydebug = (jay.yydebug.yyDebug)yydebug;
 .      }
 .      yyStates[yyTop] = yyState;
 .      yyVals[yyTop] = yyVal;
-t      if (yydebug != null) yydebug.push(yyState, yyVal);
 .
 .      yyDiscarded: for (;;) {	// discarding a token does not change stack
 .        int yyN;
 .        if ((yyN = yyDefRed[yyState]) == 0) {	// else [default] reduce (yyN)
 .          if (yyToken < 0) {
 .            yyToken = yyLex.advance() ? yyLex.token() : 0;
-t            if (yydebug != null)
-t              yydebug.lex(yyState, yyToken, yyName(yyToken), yyLex.value());
 .          }
 .          if ((yyN = yySindex[yyState]) != 0 && (yyN += yyToken) >= 0
 .              && yyN < yyTable.length && yyCheck[yyN] == yyToken) {
-t            if (yydebug != null)
-t              yydebug.shift(yyState, yyTable[yyN], yyErrorFlag > 0 ? yyErrorFlag-1 : 0);
 .            yyState = yyTable[yyN];		// shift to yyN
 .            yyVal = yyLex.value();
 .            yyToken = -1;
@@ -175,7 +148,6 @@ t              yydebug.shift(yyState, yyTable[yyN], yyErrorFlag > 0 ? yyErrorFla
 .  
 .            case 0:
 .              yyerror("syntax error");
-t              if (yydebug != null) yydebug.error("syntax error");
 .  
 .            case 1: case 2:
 .              yyErrorFlag = 3;
@@ -183,50 +155,39 @@ t              if (yydebug != null) yydebug.error("syntax error");
 .                if ((yyN = yySindex[yyStates[yyTop]]) != 0
 .                    && (yyN += yyErrorCode) >= 0 && yyN < yyTable.length
 .                    && yyCheck[yyN] == yyErrorCode) {
-t                  if (yydebug != null)
-t                    yydebug.shift(yyStates[yyTop], yyTable[yyN], 3);
 .                  yyState = yyTable[yyN];
 .                  yyVal = yyLex.value();
 .                  continue yyLoop;
 .                }
-t                if (yydebug != null) yydebug.pop(yyStates[yyTop]);
 .              } while (-- yyTop >= 0);
-t              if (yydebug != null) yydebug.reject();
 .              yyerror("irrecoverable syntax error");
 .  
 .            case 3:
 .              if (yyToken == 0) {
-t                if (yydebug != null) yydebug.reject();
 .                yyerror("irrecoverable syntax error at end-of-file");
 .              }
-t              if (yydebug != null)
-t                yydebug.discard(yyState, yyToken, yyName(yyToken), yyLex.value());
 .              yyToken = -1;
 .              continue yyDiscarded;		// leave stack alone
 .            }
 .        }
 .        int yyV = yyTop + 1-yyLen[yyN];
-t        if (yydebug != null)
-t          yydebug.reduce(yyState, yyStates[yyV-1], yyN, yyRule[yyN], yyLen[yyN]);
 .        yyVal = yyDefault(yyV > yyTop ? null : yyVals[yyV]);
 .        switch (yyN) {
+.// ACTIONS_BEGIN
 
  actions		## code from the actions within the grammar
 
+.// ACTIONS_END
 .        }
 .        yyTop -= yyLen[yyN];
 .        yyState = yyStates[yyTop];
 .        int yyM = yyLhs[yyN];
 .        if (yyState == 0 && yyM == 0) {
-t          if (yydebug != null) yydebug.shift(0, yyFinal);
 .          yyState = yyFinal;
 .          if (yyToken < 0) {
 .            yyToken = yyLex.advance() ? yyLex.token() : 0;
-t            if (yydebug != null)
-t               yydebug.lex(yyState, yyToken,yyName(yyToken), yyLex.value());
 .          }
 .          if (yyToken == 0) {
-t            if (yydebug != null) yydebug.accept(yyVal);
 .            return yyVal;
 .          }
 .          continue yyLoop;
@@ -236,10 +197,10 @@ t            if (yydebug != null) yydebug.accept(yyVal);
 .          yyState = yyTable[yyN];
 .        else
 .          yyState = yyDgoto[yyM];
-t        if (yydebug != null) yydebug.shift(yyStates[yyTop], yyState);
 .        continue yyLoop;
 .      }
 .    }
 .  }
 .
+.// ACTION_BODIES
  epilog			## text following second %%
