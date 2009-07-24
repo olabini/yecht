@@ -2,99 +2,6 @@ package org.yecht;
 
 // Equivalent to implicit.re
 public class ImplicitScanner {
-    // syck_match_implicit
-    public static String matchImplicit(Pointer ptr, int len) {
-        byte[] data = new byte[len + 2];
-        System.arraycopy(ptr.buffer, ptr.start, data, 0, len);
-        data[len] = 0;
-        int cursor = 0;
-        int limit = len;
-        int marker = -1;       
-
-/*!re2j
-        re2j:define:YYCTYPE  = "byte";
-        re2j:define:YYCURSOR  = "cursor";
-        re2j:define:YYMARKER  = "marker";
-        re2j:define:YYLIMIT  = "limit";
-        re2j:define:YYDATA  = "data";
-        re2j:yyfill:enable  = 0;
-
-NULL = [\000] ;
-ANY = [\001-\377] ;
-DIGIT = [0-9] ;
-DIGITSC = [0-9,] ;
-DIGITSP = [0-9.] ;
-YEAR = DIGIT DIGIT DIGIT DIGIT ;
-MON = DIGIT DIGIT ;
-SIGN = [-+] ;
-HEX = [0-9a-fA-F,] ;
-OCT = [0-7,] ;
-INTHEX = SIGN? "0x" HEX+ ; 
-INTOCT = SIGN? "0" OCT+ ;
-INTSIXTY = SIGN? DIGIT DIGITSC* ( ":" [0-5]? DIGIT )+ ;
-INTCANON = SIGN? ( "0" | [1-9] DIGITSC* ) ;
-FLOATFIX = SIGN? DIGIT DIGITSC* "." DIGITSC* ;
-FLOATEXP = SIGN? DIGIT DIGITSC* "." DIGITSP* [eE] SIGN DIGIT+ ;
-FLOATSIXTY = SIGN? DIGIT DIGITSC* ( ":" [0-5]? DIGIT )+ "." DIGITSC* ;
-INF = ( "inf" | "Inf" | "INF" ) ;
-FLOATINF = [+]? "." INF ;
-FLOATNEGINF = [-] "." INF ;
-FLOATNAN = "." ( "nan" | "NaN" | "NAN" ) ;
-NULLTYPE = ( "~" | "null" | "Null" | "NULL" )? ;
-BOOLYES = ( "yes" | "Yes" | "YES" | "true" | "True" | "TRUE" | "on" | "On" | "ON" ) ;
-BOOLNO = ( "no" | "No" | "NO" | "false" | "False" | "FALSE" | "off" | "Off" | "OFF" ) ;
-TIMEZ = ( "Z" | [-+] DIGIT DIGIT ( ":" DIGIT DIGIT )? ) ;
-TIMEYMD = YEAR "-" MON "-" MON ;
-TIMEISO = YEAR "-" MON "-" MON [Tt] MON ":" MON ":" MON ( "." DIGIT* )? TIMEZ ;
-TIMESPACED = YEAR "-" MON "-" MON [ \t]+ MON ":" MON ":" MON ( "." DIGIT* )? [ \t]+ TIMEZ ;
-TIMECANON = YEAR "-" MON "-" MON "T" MON ":" MON ":" MON ( "." DIGIT* [1-9]+ )? "Z" ;
-MERGE = "<<" ;
-DEFAULTKEY = "=" ;
-
-NULLTYPE NULL       {   return "null"; }
-
-BOOLYES NULL        {   return "bool#yes"; }
-
-BOOLNO NULL         {   return "bool#no"; }
-
-INTHEX NULL         {   return "int#hex"; }
-
-INTOCT NULL         {   return "int#oct"; }
-
-INTSIXTY NULL       {   return "int#base60"; }
-
-INTCANON NULL       {   return "int"; }
-
-FLOATFIX NULL       {   return "float#fix"; }
-
-FLOATEXP NULL       {   return "float#exp"; }
-
-FLOATSIXTY NULL     {   return "float#base60"; }
-
-FLOATINF NULL       {   return "float#inf"; }
-
-FLOATNEGINF NULL    {   return "float#neginf"; }
-
-FLOATNAN NULL       {   return "float#nan"; }
-
-TIMEYMD NULL        {   return "timestamp#ymd"; }
-
-TIMEISO NULL        {   return "timestamp#iso8601"; }
-
-TIMESPACED NULL     {   return "timestamp#spaced"; }
-
-TIMECANON NULL      {   return "timestamp"; }
-
-DEFAULTKEY NULL     {   return "default"; }
-
-MERGE NULL          {   return "merge"; }
-
-ANY                 {   return "str"; }
-
-*/
-        return "str";
-    }
-
     // syck_type_id_to_uri
     public static String typeIdToUri(String type_id) {
 //        System.err.println("typeIdToUri(" + type_id + ")");
@@ -110,7 +17,17 @@ ANY                 {   return "str"; }
         int limit = data.length;
         int marker = -1;
 /*!re2j
+        re2j:define:YYCTYPE  = "byte";
+        re2j:define:YYCURSOR  = "cursor";
+        re2j:define:YYMARKER  = "marker";
+        re2j:define:YYLIMIT  = "limit";
+        re2j:define:YYDATA  = "data";
+        re2j:yyfill:enable  = 0;
 
+DIGIT = [0-9] ;
+ANY = [\001-\377] ;
+YEAR = DIGIT DIGIT DIGIT DIGIT ;
+MON = DIGIT DIGIT ;
 TAG = "tag" ;
 XPRIVATE = "x-private" ;
 WD = [A-Za-z0-9_] ;
