@@ -420,7 +420,7 @@ case 15:
   { 
                    if(parser.implicit_typing)
                    {
-                      ImplicitScanner.tryTagImplicit((Node)yyVals[0+yyTop], parser.taguri_expansion);
+                      ImplicitScanner2.tryTagImplicit((Node)yyVals[0+yyTop], parser.taguri_expansion);
                    }
                    yyVal = yyVals[0+yyTop];
                 }
@@ -469,7 +469,7 @@ case 27:
   { 
                if(parser.implicit_typing)
                {
-                  ImplicitScanner.tryTagImplicit((Node)yyVals[0+yyTop], parser.taguri_expansion);
+                  ImplicitScanner2.tryTagImplicit((Node)yyVals[0+yyTop], parser.taguri_expansion);
                }
                yyVal = yyVals[0+yyTop];
             }

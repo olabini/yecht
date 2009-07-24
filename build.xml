@@ -34,6 +34,14 @@
     <mkdir dir="${ruby.classes.dir}"/>
   </target>
 
+  <target name="ragel" depends="prepare" description="Standalone target that generates all our ragel based source files. Requires ragel to be on the path">
+    <exec executable="ragel" failonerror="true">
+      <arg line="-J"/>
+      <arg line="-o ${main.src.dir}/org/yecht/ImplicitScanner2.java"/>
+      <arg line="${main.src.dir}/org/yecht/ImplicitScanner2.rl"/>
+    </exec>
+  </target>
+
   <target name="re2j" depends="prepare" description="Standalone target that generates all our re2j based source files. Requires re2j to be on the path">
     <exec executable="re2j" failonerror="true">
       <arg line="-o ${main.src.dir}/org/yecht/TokenScanner.java"/>
@@ -73,7 +81,7 @@
     </javac>
   </target>
 
-  <target name="compile-with-gen" depends="re2j, jay" description="Compile the source files for the project.">
+  <target name="compile-with-gen" depends="re2j, jay, ragel" description="Compile the source files for the project.">
     <javac destdir="${yecht.classes.dir}" debug="true" source="${javac.version}" target="${javac.version}">
       <classpath refid="build.classpath"/>
       <src path="${main.src.dir}"/>

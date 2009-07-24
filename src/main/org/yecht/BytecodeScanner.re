@@ -407,7 +407,7 @@ ANY     {   q.cat(parser.buffer.buffer[tok]);
                    lval = n;
                    parser.popLevel();
                    if(parser.implicit_typing) {
-                       ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
+                       ImplicitScanner2.tryTagImplicit(n, parser.taguri_expansion);
                    }          
                    return DefaultYAMLParser.YAML_PLAIN;
                }

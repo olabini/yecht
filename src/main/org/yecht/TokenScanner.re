@@ -212,7 +212,7 @@ public class TokenScanner implements DefaultYAMLParser.yyInput {
        dd.style = ScalarStyle.Plain;                            
        lval = n;
        if(parser.implicit_typing) {
-           ImplicitScanner.tryTagImplicit(n, parser.taguri_expansion);
+           ImplicitScanner2.tryTagImplicit(n, parser.taguri_expansion);
        }
    }
 

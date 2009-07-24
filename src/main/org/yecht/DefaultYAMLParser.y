@@ -67,7 +67,7 @@ empty           : indent_open empty indent_end {
                 { 
                    if(parser.implicit_typing)
                    {
-                      ImplicitScanner.tryTagImplicit((Node)$2, parser.taguri_expansion);
+                      ImplicitScanner2.tryTagImplicit((Node)$2, parser.taguri_expansion);
                    }
                    $$ = $2;
                 }
@@ -128,7 +128,7 @@ word_rep	: YAML_TRANSFER word_rep
             { 
                if(parser.implicit_typing)
                {
-                  ImplicitScanner.tryTagImplicit((Node)$2, parser.taguri_expansion);
+                  ImplicitScanner2.tryTagImplicit((Node)$2, parser.taguri_expansion);
                }
                $$ = $2;
             }
