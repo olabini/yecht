@@ -20,3 +20,40 @@ Yecht - Fixed parser (switched to Jay)
 
 
 
+
+
+
+MRI
+                                    user     system      total        real
+1k small parse                  0.090000   0.000000   0.090000 (  0.104769)
+1k small loads                  0.060000   0.010000   0.070000 (  0.072829)
+1k small dumps                  0.370000   0.000000   0.370000 (  0.396296)
+1k small roundtrip              0.410000   0.010000   0.420000 (  0.429103)
+1k big parse                    4.440000   0.050000   4.490000 (  4.615258)
+1k big loads                    1.920000   0.020000   1.940000 (  1.991891)
+1k big dumps                   22.170000   0.270000  22.440000 ( 23.361924)
+1k big roundtrip               24.180000   0.300000  24.480000 ( 25.483744)
+
+JRuby trunk
+                                    user     system      total        real
+1k small parse                  0.327000   0.000000   0.327000 (  0.326000)
+1k small loads                  0.100000   0.000000   0.100000 (  0.099000)
+1k small dumps                  0.202000   0.000000   0.202000 (  0.202000)
+1k small roundtrip              0.322000   0.000000   0.322000 (  0.322000)
+1k big parse                   16.259000   0.000000  16.259000 ( 16.259000)
+1k big loads                    1.752000   0.000000   1.752000 (  1.752000)
+1k big dumps                   10.333000   0.000000  10.333000 ( 10.333000)
+1k big roundtrip               13.886000   0.000000  13.886000 ( 13.886000)
+
+JRuby with old Yecht
+                                    user     system      total        real
+1k small parse                  0.380000   0.000000   0.380000 (  0.380000)
+1k small loads                  0.284000   0.000000   0.284000 (  0.284000)
+1k small dumps                  0.347000   0.000000   0.347000 (  0.347000)
+1k small roundtrip              0.582000   0.000000   0.582000 (  0.582000)
+1k big parse                   23.629000   0.000000  23.629000 ( 23.630000)
+1k big loads                   14.802000   0.000000  14.802000 ( 14.802000)
+1k big dumps                   19.526000   0.000000  19.526000 ( 19.526000)
+1k big roundtrip               36.202000   0.000000  36.202000 ( 36.202000)
+
+JRuby with new Yecht

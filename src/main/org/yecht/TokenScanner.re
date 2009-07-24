@@ -357,6 +357,8 @@ ANY                 {   YYPOS(0);
         }
     }
 
+
+    // TODO: implement without re2j
    private int document(int doc_level) throws java.io.IOException {
 //        System.out.println("document()");
        while(true) {
