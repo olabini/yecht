@@ -731,7 +731,7 @@ ANY                 {   YYPOS(0);
                     return plain();
                 }
                 do_any = false;
-            }            
+            }
         }
     }
 
@@ -753,6 +753,51 @@ ANY                 {   parser.cursor = parser.toktmp;
        }
    }
 
+   private int getAndCheckIndentLength() {
+       int indt_len;
+       int indent = parser.token;
+       NEWLINE(indent);
+       while(indent < parser.cursor) {
+                            // these pieces commented out to be compatible with Syck 0.60. 
+//                          if(parser.buffer.buffer[indent] == '\t') {
+//                            error("TAB found in your indentation, please remove",parser);
+//                          } else if(isNewline(++indent) != 0) {
+//                            NEWLINE(indent);
+//                          }
+
+           if(isNewline(++indent) != 0) {
+               NEWLINE(indent);
+           }
+       }
+       indt_len = 0;
+       if(parser.buffer.buffer[parser.cursor] == 0) {
+           indt_len = -1;
+       } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
+           indt_len = parser.cursor - parser.lineptr;
+       }
+
+       return indt_len;
+   }                 
+
+   private void countAndAddNewlines(QuotedString q) {
+       int nl_count = 0;
+       while(parser.token < parser.cursor) {
+           int nl_len = newlineLen(parser.token++);
+           if(nl_len > 0) {
+               nl_count++;
+               parser.token += (nl_len - 1);
+           }
+       }
+
+       if(nl_count <= 1) {
+           q.cat(' ');
+       } else {
+           for(int i = 0; i < nl_count - 1; i++) {
+               q.cat('\n');
+           }
+       }
+   }
+
    private int plain() throws java.io.IOException {
 //        System.out.println("plain()");
        QuotedString q = new QuotedString();
@@ -770,67 +815,98 @@ ANY                 {   parser.cursor = parser.toktmp;
        }
 
        boolean plain3 = false;
+       boolean do_any = false;
 
        while(true) {
            parser.token = parser.cursor;
            do {
                plain3 = false;
-/*!re2j
 
-YINDENT             {   
-                        int indt_len, nl_count = 0;
-                        int tok = parser.token;
-                        int indent = tok;
-                        NEWLINE(indent);
-                        while(indent < parser.cursor) {
-                            // these pieces commented out to be compatible with Syck 0.60. 
-//                          if(parser.buffer.buffer[indent] == '\t') {
-//                            error("TAB found in your indentation, please remove",parser);
-//                          } else if(isNewline(++indent) != 0) {
-//                            NEWLINE(indent);
-//                          }
+               if ((parser.limit - parser.cursor) < 3) parser.read();
+               byte yych = parser.buffer.buffer[parser.cursor];
+               switch(yych) {
+               // YINDENT
+               case '\r':
+                   if(parser.buffer.buffer[parser.cursor+1] != '\n') {
+                       do_any = true;
+                       break;
+                   } else {
+                       parser.cursor++;
+                   }
+               case '\n':
+                   parser.cursor++;
+                   spcOrLfStar();
+                   int indt_len = getAndCheckIndentLength();
+                   if(indt_len <= parentIndent) {
+                       RETURN_IMPLICIT(q);
+                       return DefaultYAMLParser.YAML_PLAIN;
+                   }
 
-                          if(isNewline(++indent) != 0) {
-                            NEWLINE(indent);
-                          }
-                        }
-                        indt_len = 0;
-                        if(parser.buffer.buffer[parser.cursor] == 0) {
-                          indt_len = -1;
-                          tok = parser.cursor-1;
-                        } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
-                          indt_len = parser.cursor - parser.lineptr;
-                        }
+                   countAndAddNewlines(q);
+                   break;
 
-                        if(indt_len <= parentIndent) {
+               case 0x00:
+                   parser.cursor++;
+                   RETURN_IMPLICIT(q);
+                   return DefaultYAMLParser.YAML_PLAIN;
+
+               case ' ':
+                   if(parser.buffer.buffer[parser.cursor+1] == '#') {
+                       parser.cursor+=2;
+                       eatComments(); 
+                       RETURN_IMPLICIT(q);
+                       return DefaultYAMLParser.YAML_PLAIN;
+                   }
+               case '\t':
+                   parser.cursor++;
+                   if(q.idx != 0) {
+                       plain3 = true;
+                   }
+                   break;
+               case '}':
+                   parser.cursor++;
+                        if(plvl.status != LevelStatus.imap) {
+                            // PLAIN_NOT_INL
+                            if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
+                                parser.cursor--;
+                            }
+                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
+                        } else {
+                            q.plain_is_inl();
                             RETURN_IMPLICIT(q);
                             return DefaultYAMLParser.YAML_PLAIN;
                         }
-
-                        while(parser.token < parser.cursor) {
-                            int nl_len = newlineLen(parser.token++);
-                            if(nl_len > 0) {
-                              nl_count++;
-                              parser.token += (nl_len - 1);
+                        break;
+               case ']':
+                   parser.cursor++;                                                     
+                        if(plvl.status != LevelStatus.iseq) {
+                            // PLAIN_NOT_INL
+                            if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
+                                parser.cursor--;
                             }
-                        }
-
-                        if(nl_count <= 1) {
-                            q.cat(' ');
+                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
                         } else {
-                            for(int i = 0; i < nl_count - 1; i++) {
-                                q.cat('\n');
-                            }
+                            q.plain_is_inl();
+                            RETURN_IMPLICIT(q);
+                            return DefaultYAMLParser.YAML_PLAIN;
                         }
                         break;
-                    }
+               // ALLX
+               case ':':
+                   parser.cursor++;
+                   if(endspc()) {
+                       RETURN_IMPLICIT(q);
+                       return DefaultYAMLParser.YAML_PLAIN;
+                   } else {
+                       parser.cursor--;
+                       do_any = true;
+                       break;
+                   }
 
-ALLX                {   
-                        RETURN_IMPLICIT(q);
-                        return DefaultYAMLParser.YAML_PLAIN;
-                    }
-
-ICOMMA              {  
+               // ICOMMA
+               case ',':
+                   parser.cursor++;
+                   if(endspc()) {
                         if(plvl.status != LevelStatus.iseq && plvl.status != LevelStatus.imap) {
                             // PLAIN_NOT_INL
                             if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
@@ -844,68 +920,22 @@ ICOMMA              {
                         }
 
                         break;
-                    }
+                   } else {
+                       parser.cursor--;
+                       do_any = true;
+                       break;
+                   }
 
-IMAPC               {   
-                        if(plvl.status != LevelStatus.imap) {
-                            // PLAIN_NOT_INL
-                            if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
-                                parser.cursor--;
-                            }
-                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                        } else {
-                            q.plain_is_inl();
-                            RETURN_IMPLICIT(q);
-                            return DefaultYAMLParser.YAML_PLAIN;
-                        }
-                        break;
-                    }
+               default:
+                   do_any = true;
+                   break;                   
+               }
 
-ISEQC               {
-                        if(plvl.status != LevelStatus.iseq) {
-                            // PLAIN_NOT_INL
-                            if(parser.buffer.buffer[parser.cursor-1] == ' ' || isNewline(parser.cursor-1) > 0) {
-                                parser.cursor--;
-                            }
-                            q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                        } else {
-                            q.plain_is_inl();
-                            RETURN_IMPLICIT(q);
-                            return DefaultYAMLParser.YAML_PLAIN;
-                        }
-                        break;
-                    }
-
-" #"                {   
-                        eatComments(); 
-                        RETURN_IMPLICIT(q);
-                        return DefaultYAMLParser.YAML_PLAIN;
-                    }
-
-NULL                {   
-                        RETURN_IMPLICIT(q);
-                        return DefaultYAMLParser.YAML_PLAIN;
-                    }
-
-SPCTAB              {   
-                        if(q.idx != 0) {
-                            plain3 = true;
-                        }
-                        break;
-                    }
-
-ANY                 {
-                        q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
-                        break;
-                    }
-
-*/
-
-//               if(!plain3) {
-//                  System.out.println("plain2()");
-//               } else {
-//                  System.out.println("plain3()");
-//               }
+               if(do_any) {
+                   parser.cursor++;
+                   q.cat(parser.buffer.buffer, parser.token, parser.cursor - parser.token);
+                   do_any = false;
+               }
            } while(plain3);
        }
    }
@@ -951,20 +981,7 @@ YINDENT             {
                         }
 
                         if(keep_nl == 1) {
-                            while(parser.token < parser.cursor) {
-                                int nl_len = newlineLen(parser.token++);
-                                if(nl_len > 0) {
-                                    nl_count++;
-                                    parser.token += (nl_len - 1);
-                                }
-                            }
-                            if(nl_count <= 1) {
-                                q.cat(' ');
-                            } else {
-                                for(int i = 0; i < nl_count - 1; i++) {
-                                    q.cat('\n');
-                                }
-                            }
+                            countAndAddNewlines(q);
                         }
 
                         keep_nl = 1;
@@ -1200,28 +1217,7 @@ ANY                 {
 YINDENT             {   
                         int tok = parser.token;
                         int nl_count = 0, fold_nl = 0, nl_begin = 0;
-
-                        int indent = tok;
-                        NEWLINE(indent);
-                        while(indent < parser.cursor) {
-                            // these pieces commented out to be compatible with Syck 0.60. 
-//                          if(parser.buffer.buffer[indent] == '\t') {
-//                            error("TAB found in your indentation, please remove",parser);
-//                          } else if(isNewline(++indent) != 0) {
-//                            NEWLINE(indent);
-//                          }
-
-                          if(isNewline(++indent) != 0) {
-                            NEWLINE(indent);
-                          }
-                        }
-                        int indt_len = 0;
-                        if(parser.buffer.buffer[parser.cursor] == 0) {
-                          indt_len = -1;
-                          tok = parser.cursor-1;
-                        } else if(parser.buffer.buffer[parser.lineptr] == ' ') {
-                          indt_len = parser.cursor - parser.lineptr;
-                        }
+                        int indt_len = getAndCheckIndentLength();
 
                         lvl = parser.currentLevel();
                         if(lvl.status != LevelStatus.block) {
