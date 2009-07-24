@@ -294,7 +294,7 @@ public class Emitter {
             return;
         }
 
-        if(ignore != null && ImplicitScanner.tagcmp(tag, ignore) && !this.explicit_typing) {
+        if(ignore != null && ImplicitScanner2.tagcmp(tag, ignore) && !this.explicit_typing) {
             return;
         }
 
@@ -493,7 +493,7 @@ public class Emitter {
         Level parent = parentLevel();
         Level lvl = currentLevel();
 
-        if(len == 0 && (parent.status == LevelStatus.map || parent.status == LevelStatus.imap) && parent.ncount % 2 == 1 && ImplicitScanner.tagcmp(tag, "tag:yaml.org,2002:null")) {
+        if(len == 0 && (parent.status == LevelStatus.map || parent.status == LevelStatus.imap) && parent.ncount % 2 == 1 && ImplicitScanner2.tagcmp(tag, "tag:yaml.org,2002:null")) {
             _str = TILDE;
             bstr = _str.buffer;
             str = _str.start;
@@ -501,11 +501,11 @@ public class Emitter {
         }
         
         int scan = scanScalar(force_width, _str, len);
-        String implicit = Parser.taguri(YAML.DOMAIN, ImplicitScanner.matchImplicit(_str, len));
-        if(!ImplicitScanner.tagcmp(tag, implicit) && ImplicitScanner.tagcmp(tag, "tag:yaml.org,2002:str")) {
+        String implicit = Parser.taguri(YAML.DOMAIN, ImplicitScanner2.matchImplicit(_str, len));
+        if(!ImplicitScanner2.tagcmp(tag, implicit) && ImplicitScanner2.tagcmp(tag, "tag:yaml.org,2002:str")) {
             force_style = ScalarStyle.TwoQuote;
         } else {
-            if(parent.status == LevelStatus.map && parent.ncount % 2 == 1 && ( !(tag == null || (implicit != null && ImplicitScanner.tagcmp(tag, implicit) && !explicit_typing)))) {
+            if(parent.status == LevelStatus.map && parent.ncount % 2 == 1 && ( !(tag == null || (implicit != null && ImplicitScanner2.tagcmp(tag, implicit) && !explicit_typing)))) {
                 write(QUESTION_MARK_SPACE, 2);
                 parent.status = LevelStatus.mapx;
             }

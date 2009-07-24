@@ -20,6 +20,7 @@ import org.yecht.ParserInput;
 import org.yecht.OutputHandler;
 import org.yecht.Pointer;
 import org.yecht.ImplicitScanner;
+import org.yecht.ImplicitScanner2;
 import org.yecht.MapStyle;
 import org.yecht.SeqStyle;
 import org.yecht.ScalarStyle;
@@ -880,7 +881,7 @@ public class YechtYAML {
             IRubyObject tmp = TypeConverter.convertToTypeWithCheck(val, self.getRuntime().getString(), "to_str");
             if(!tmp.isNil()) {
                 ByteList bl = ((RubyString)tmp).getByteList();
-                String type_id = ImplicitScanner.matchImplicit(Pointer.create(bl.bytes, bl.begin), bl.realSize);
+                String type_id = ImplicitScanner2.matchImplicit(Pointer.create(bl.bytes, bl.begin), bl.realSize);
                 return self.getRuntime().newString(type_id);
             }
             return RubyString.newEmptyString(self.getRuntime());
