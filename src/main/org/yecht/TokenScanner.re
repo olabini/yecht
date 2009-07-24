@@ -131,22 +131,10 @@ public class TokenScanner implements DefaultYAMLParser.yyInput {
         return indt_len;       
    }
    
-   public final static String[] tnames = new String[126];
+   public final static String[] tnames = new String[269];
    static {
        tnames[0] = "ENDINPUT";
-       tnames[1] = "ALIAS";
-       tnames[2] = "ANCHOR";
-       tnames[3] = "BLOCK";
-       tnames[4] = "DOCSEP";
-       tnames[5] = "IEND";
-       tnames[6] = "INDENT";
-       tnames[7] = "IOPEN";
-       tnames[8] = "ITRANSFER";
-       tnames[9] = "PLAIN";
-       tnames[10] = "TAGURI";
-       tnames[11] = "TRANSFER";
-       tnames[12] = "WORD";
-       tnames[13] = "error";
+       tnames[256] = "error";
        tnames[44] = "COMMA";
        tnames[45] = "DASH";
        tnames[58] = "COLON";
@@ -155,6 +143,18 @@ public class TokenScanner implements DefaultYAMLParser.yyInput {
        tnames[93] = "SQUAREC";
        tnames[123] = "CURLYO";
        tnames[125] = "CURLYC";
+       tnames[257] = "ANCHOR";
+       tnames[258] = "ALIAS";
+       tnames[264] = "BLOCK";
+       tnames[265] = "DOCSEP";
+       tnames[268] = "IEND";
+       tnames[267] = "INDENT";
+       tnames[266] = "IOPEN";
+       tnames[261] = "ITRANSFER";
+       tnames[263] = "PLAIN";
+       tnames[260] = "TAGURI";
+       tnames[259] = "TRANSFER";
+       tnames[262] = "WORD";
    }
 
    private void YYPOS(int n) {
@@ -357,21 +357,163 @@ ANY                 {   YYPOS(0);
         }
     }
 
+    private final static boolean[] YWORDC = new boolean[256];
+    private final static boolean[] DIGIT_OR_SIGN = new boolean[256];
+    static {
+        for(char c = 'a'; c<='z'; c++) {
+            YWORDC[c] = true;
+        }
+        for(char c = 'A'; c<='Z'; c++) {
+            YWORDC[c] = true;
+        }
+        for(char c = '0'; c<='9'; c++) {
+            YWORDC[c] = true;
+            DIGIT_OR_SIGN[c] = true;
+        }
+        YWORDC['_'] = true;
+        YWORDC['-'] = true;
+        DIGIT_OR_SIGN['-'] = true;
+        DIGIT_OR_SIGN['+'] = true;
+    }
 
-    // TODO: implement without re2j
-   private int document(int doc_level) throws java.io.IOException {
+    // (SPC | LF)*
+    private void spcOrLfStar() throws IOException {
+        byte ych;
+        while(true) {
+            if(parser.cursor+3 >= parser.limit) parser.read();
+            ych = parser.buffer.buffer[parser.cursor];
+            switch(ych) {
+            case ' ':
+            case '\n':
+              parser.cursor++;
+              break;
+            case '\r':
+              if(parser.buffer.buffer[parser.cursor+1] == '\n') {
+                  parser.cursor+=2;
+                  break;
+              } else {
+                  return;
+              }
+            default:
+              return;            
+            }
+        }
+    }
+
+    // YWORDC+
+    private boolean ywordc() throws IOException {
+        if(!YWORDC[parser.buffer.buffer[parser.cursor] & 0xFF]) return false;
+        parser.cursor++;
+        while(true) {
+            if(parser.cursor == parser.limit) parser.read();
+            if(!YWORDC[parser.buffer.buffer[parser.cursor] & 0xFF]) return true;
+            parser.cursor++;
+        }
+    }
+
+    // ( SPC+ | LF )
+    private boolean endspc() throws IOException {
+        byte ych = parser.buffer.buffer[parser.cursor];
+        switch(ych) {
+        case ' ':
+          parser.cursor++;
+          while(true) {
+              if(parser.cursor == parser.limit) parser.read();
+              if(parser.buffer.buffer[parser.cursor] != ' ') return true;
+              parser.cursor++;
+          }
+        case '\r':
+          if(parser.buffer.buffer[parser.cursor+1] != '\n') {
+              return false;
+          }
+          parser.cursor++;
+        case '\n':
+          parser.cursor++;
+          return true;
+        default:
+          return false;
+        } 
+    }
+
+    // [-+0-9]* ENDSPC
+    private boolean yblock() throws IOException {
+        int plus = 0;
+        int ych = parser.buffer.buffer[parser.cursor + plus] & 0xFF;
+        while(DIGIT_OR_SIGN[ych]) {
+            plus++;
+            if((parser.limit - parser.cursor) < plus) parser.read();
+            ych = parser.buffer.buffer[parser.cursor + plus] & 0xFF;
+        }        
+
+        switch(ych) {
+        case ' ':
+          plus++;
+          while(true) {
+              if((parser.limit - parser.cursor) < plus) parser.read();
+              if(parser.buffer.buffer[parser.cursor + plus] != ' ') {
+                  parser.cursor += plus;
+                  return true;
+              }
+              plus++;
+          }
+        case '\r':
+          if(parser.buffer.buffer[parser.cursor+plus+1] != '\n') {
+              return false;
+          }
+          plus++;
+        case '\n':
+          plus++;
+          parser.cursor += plus;
+          return true;
+        default:
+          return false;
+        } 
+    }
+
+    private int document(int doc_level) throws java.io.IOException {
 //        System.out.println("document()");
-       while(true) {
-           Level lvl = parser.currentLevel();
-           if(lvl.status == LevelStatus.header) {
-               lvl.status = LevelStatus.doc;
-           }
+        boolean do_any = false;
 
-           parser.token = parser.cursor;
+        while(true) {
+            Level lvl = parser.currentLevel();
+            if(lvl.status == LevelStatus.header) {
+                lvl.status = LevelStatus.doc;
+            }
 
-/*!re2j
+            parser.token = parser.cursor;
 
-YINDENT             {   /* Isolate spaces */
+            if ((parser.limit - parser.cursor) < 3) parser.read();
+            byte yych = parser.buffer.buffer[parser.cursor];
+
+            switch (yych) {
+            case 0x00:
+                parser.cursor++;
+                if(lvl.spaces > -1) {
+                    parser.popLevel();
+                    YYPOS(0);
+                    return DefaultYAMLParser.YAML_IEND;
+                }
+                YYPOS(0);
+                return 0; 
+            case '\t':
+            case ' ':
+                parser.cursor++;
+                while((yych = parser.buffer.buffer[parser.cursor]) == '\t' || yych == ' ') {
+                    parser.cursor++;
+                    if(parser.cursor == parser.limit) parser.read();
+                }
+                break;
+            case '\r':
+                if(parser.buffer.buffer[parser.cursor+1] != '\n') {
+                    do_any = true;
+                    break;
+                } else {
+                    parser.cursor++;
+                }
+            case '\n':
+                parser.cursor++;
+                spcOrLfStar();
+                        /* Isolate spaces */
                         int indt_len;
                         int indent = parser.token;
                         NEWLINE(indent);
@@ -420,163 +562,179 @@ YINDENT             {   /* Isolate spaces */
                             }
                         }
                         break;
-                    }
 
-ISEQO               {   
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            lvl = parser.currentLevel();
-                            parser.addLevel(lvl.spaces + 1, LevelStatus.iseq);
-                            return parser.buffer.buffer[parser.token];
-                        }
-                        break;                    
-                    }
-
-IMAPO               {
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            lvl = parser.currentLevel();
-                            parser.addLevel(lvl.spaces + 1, LevelStatus.imap);
-                            return parser.buffer.buffer[parser.token];
-                        }
-                        break;
-                    }
-
-CDELIMS             {   parser.popLevel();
-                        return parser.buffer.buffer[parser.token];
-                    }
-
-[:,] ENDSPC         {   if( parser.buffer.buffer[parser.token] == ':' && lvl.status != LevelStatus.imap && lvl.status != LevelStatus.iseq ) {
-                            lvl.status = LevelStatus.map;
-                        }
-                        YYPOS(1); 
-                        return parser.buffer.buffer[parser.token];
-                    }
-
-[-?] ENDSPC         {   
-                        if(lvl.spaces < (parser.token - parser.lineptr)) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel((parser.token - parser.lineptr), LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            parser.force_token = DefaultYAMLParser.YAML_IOPEN;
-                            if( parser.buffer.buffer[parser.cursor] == '#' || isNewline(parser.cursor) != 0 || isNewline(parser.cursor-1) != 0) {
-                                parser.cursor--;
-                                parser.addLevel(parser.token + 1 - parser.lineptr, LevelStatus.seq);
-                            } else /* spaces followed by content uses the space as indentation */
-                            {
-                                parser.addLevel(parser.cursor - parser.lineptr, LevelStatus.seq);
-                            }
-                            return parser.buffer.buffer[parser.token];
-                        }
-                        break;
-                    }
-"&" YWORDC+         {   lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
-
-                        /*
-                         * Remove previous anchors of the same name.  Since the parser will likely
-                         * construct deeper nodes first, we want those nodes to be placed in the
-                         * queue for matching at a higher level of indentation.
-                         */
-                        parser.removeAnchor((String)lval);
-                        return DefaultYAMLParser.YAML_ANCHOR;
-                    }
-
-"*" YWORDC+         {   
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
-                            return DefaultYAMLParser.YAML_ALIAS;
-                        }
-                        break;
-                    }
-
-"!"                 {   return transferMethod(); }
-
-"'"                 {   
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            return singleQuote(); 
-                        }
-                        break;
-                    }
-
-"\""                {   
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            return doubleQuote();
-                        }
-                        break;
-                    }
-
-YBLOCK              {   if(isNewline(parser.cursor - 1) != 0) {
-                            parser.cursor--;
-                        }
-                        return scalarBlock();
-                    }
-
-"#"                 {   
-                        eatComments(); 
-                        break;
-                    }
-
-SPCTAB+             {
-                        break;
-                    }
-
-NULL                {   
-                        if(lvl.spaces > -1) {
-                            parser.popLevel();
-                            YYPOS(0);
-                            return DefaultYAMLParser.YAML_IEND;
-                        }
+            case '!': 
+                parser.cursor++;
+                return transferMethod();
+            case '"':
+                parser.cursor++;
+                if(lvl.spaces < doc_level) {
+                    if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                        parser.addLevel(doc_level, LevelStatus.doc);
                         YYPOS(0);
-                        return 0; 
+                        return DefaultYAMLParser.YAML_IOPEN;
                     }
+                } else {
+                    return doubleQuote();
+                }
+                break;
+            case '#':
+                parser.cursor++;
+                eatComments(); 
+                break;
+            case '&':
+                parser.cursor++;
+                if(ywordc()) {
+                    lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
 
-ANY                 {   
-                        if(lvl.spaces < doc_level) {
-                            if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
-                                parser.addLevel(doc_level, LevelStatus.doc);
-                                YYPOS(0);
-                                return DefaultYAMLParser.YAML_IOPEN;
-                            }
-                        } else {
-                            return plain();
+                    /*
+                     * Remove previous anchors of the same name.  Since the parser will likely
+                     * construct deeper nodes first, we want those nodes to be placed in the
+                     * queue for matching at a higher level of indentation.
+                     */
+                    parser.removeAnchor((String)lval);
+                    return DefaultYAMLParser.YAML_ANCHOR;
+                } else {
+                    parser.cursor--;
+                    do_any = true;
+                    break;
+                }
+            case '\'':
+                parser.cursor++;
+                if(lvl.spaces < doc_level) {
+                    if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                        parser.addLevel(doc_level, LevelStatus.doc);
+                        YYPOS(0);
+                        return DefaultYAMLParser.YAML_IOPEN;
+                    }
+                } else {
+                    return singleQuote(); 
+                }
+                break;
+            case '*':
+                parser.cursor++;
+                if(ywordc()) {
+                    if(lvl.spaces < doc_level) {
+                        if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                            parser.addLevel(doc_level, LevelStatus.doc);
+                            YYPOS(0);
+                            return DefaultYAMLParser.YAML_IOPEN;
                         }
-                        break;
+                    } else {
+                        lval = new String(parser.buffer.buffer, parser.token + 1, parser.cursor - (parser.token + 1), "ISO-8859-1");
+                        return DefaultYAMLParser.YAML_ALIAS;
                     }
+                } else {
+                    parser.cursor--;
+                    do_any = true;
+                }
+                break;
+            case ',':
+            case ':':
+                parser.cursor++;
+                if(endspc()) {
+                    if( parser.buffer.buffer[parser.token] == ':' && lvl.status != LevelStatus.imap && lvl.status != LevelStatus.iseq ) {
+                        lvl.status = LevelStatus.map;
+                    }
+                    YYPOS(1); 
+                    return parser.buffer.buffer[parser.token];
+                } else {
+                    parser.cursor--;
+                    do_any = true;
+                    break;
+                }
+            case '-':
+            case '?':
+                parser.cursor++;
+                if(endspc()) {
+                    if(lvl.spaces < (parser.token - parser.lineptr)) {
+                        if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                            parser.addLevel((parser.token - parser.lineptr), LevelStatus.doc);
+                            YYPOS(0);
+                            return DefaultYAMLParser.YAML_IOPEN;
+                        }
+                    } else {
+                        parser.force_token = DefaultYAMLParser.YAML_IOPEN;
+                        if( parser.buffer.buffer[parser.cursor] == '#' || isNewline(parser.cursor) != 0 || isNewline(parser.cursor-1) != 0) {
+                            parser.cursor--;
+                            parser.addLevel(parser.token + 1 - parser.lineptr, LevelStatus.seq);
+                        } else /* spaces followed by content uses the space as indentation */
+                        {
+                            parser.addLevel(parser.cursor - parser.lineptr, LevelStatus.seq);
+                        }
+                        return parser.buffer.buffer[parser.token];
+                    }
+                } else {
+                    parser.cursor--;
+                    do_any = true;
+                }
+                break;
+            case '>':
+            case '|':
+                parser.cursor++;
+                if(yblock()) {
+                    if(isNewline(parser.cursor - 1) != 0) {
+                        parser.cursor--;
+                    }
+                    return scalarBlock();
+                } else {
+                    parser.cursor--;
+                    do_any = true;
+                }
+                break;
+            case '[':
+                parser.cursor++;
+                if(lvl.spaces < doc_level) {
+                    if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                        parser.addLevel(doc_level, LevelStatus.doc);
+                        YYPOS(0);
+                        return DefaultYAMLParser.YAML_IOPEN;
+                    }
+                } else {
+                    lvl = parser.currentLevel();
+                    parser.addLevel(lvl.spaces + 1, LevelStatus.iseq);
+                    return parser.buffer.buffer[parser.token];
+                }
+                break;                    
+            case ']':
+            case '}':
+                parser.cursor++;
+                parser.popLevel();
+                return parser.buffer.buffer[parser.token];
+            case '{':
+                parser.cursor++;
+                if(lvl.spaces < doc_level) {
+                    if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                        parser.addLevel(doc_level, LevelStatus.doc);
+                        YYPOS(0);
+                        return DefaultYAMLParser.YAML_IOPEN;
+                    }
+                } else {
+                    lvl = parser.currentLevel();
+                    parser.addLevel(lvl.spaces + 1, LevelStatus.imap);
+                    return parser.buffer.buffer[parser.token];
+                }
+                break;
+            default:
+                do_any = true;
+                break;
+            }
 
-*/
-       }
-   }
+            if(do_any) {
+                if(lvl.spaces < doc_level) {
+                    if(lvl.status != LevelStatus.iseq && lvl.status != LevelStatus.imap) {
+                        parser.addLevel(doc_level, LevelStatus.doc);
+                        YYPOS(0);
+                        return DefaultYAMLParser.YAML_IOPEN;
+                    }
+                } else {
+                    return plain();
+                }
+                do_any = false;
+            }            
+        }
+    }
+
 
    private int directive() throws java.io.IOException {
 //        System.out.println("directive()");

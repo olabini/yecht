@@ -22,6 +22,10 @@ Yecht - Optimized parser (Tom's fixes from JRuby) (no difference, really)
    scanning ../jruby_newyaml/bench/big_yaml.yml 10000 times took  12951ms
    parsing  ../jruby_newyaml/bench/big_yaml.yml 10000 times took  16298ms
 
+Yecht - Handwritten document-section in Scanner
+   scanning ../jruby_newyaml/bench/big_yaml.yml 10000 times took  11226ms
+   parsing  ../jruby_newyaml/bench/big_yaml.yml 10000 times took  14059ms
+
 
 
 
