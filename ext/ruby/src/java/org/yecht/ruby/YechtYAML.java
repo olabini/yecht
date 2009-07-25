@@ -263,6 +263,116 @@ public class YechtYAML {
         return null;
     }
 
+    private static boolean handleScalar(Ruby runtime, org.yecht.Node n, String type_id, IRubyObject[] ref) throws java.io.UnsupportedEncodingException {
+        Data.Str ds = (Data.Str)n.data;
+        ThreadContext ctx = runtime.getCurrentContext();
+        boolean transferred = true;
+        IRubyObject obj = null;
+
+        if(type_id == null) {
+            obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+        } else if(type_id.equals("null")) {
+            obj = runtime.getNil();
+        } else if(type_id.equals("binary")) {
+            obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+            obj.callMethod(ctx, "tr!", new IRubyObject[]{runtime.newString("\n\t "), runtime.newString("")});
+            IRubyObject arr = obj.callMethod(ctx, "unpack", runtime.newString("m"));
+            obj = ((RubyArray)arr).shift(ctx);
+        } else if(type_id.equals("bool#yes")) {
+            obj = runtime.getTrue();
+        } else if(type_id.equals("bool#no")) {
+            obj = runtime.getFalse();
+        } else if(type_id.equals("int#hex")) {
+            n.strBlowAwayCommas();
+            obj = RubyNumeric.str2inum(runtime, RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len), 16, true);
+        } else if(type_id.equals("int#oct")) {
+            n.strBlowAwayCommas();
+            obj = RubyNumeric.str2inum(runtime, RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  8, true);
+        } else if(type_id.equals("int#base60")) {
+            long sixty = 1;
+            long total = 0;
+            n.strBlowAwayCommas();
+            int ptr = ds.ptr.start;
+            int end = ptr + ds.len;
+            while(end > ptr) {
+                long bnum = 0;
+                int colon = end - 1;
+                while(colon >= ptr && ds.ptr.buffer[colon] != ':' ) {
+                    colon--;
+                }
+                bnum = Integer.parseInt(new String(ds.ptr.buffer, colon+1, end-(colon+1), "ISO-8859-1"));
+                total += bnum * sixty;
+                sixty *= 60;
+                end = colon;
+            }
+            obj = runtime.newFixnum(total);
+        } else if(type_id.startsWith("int")) {
+            n.strBlowAwayCommas();
+            obj = RubyNumeric.str2inum(runtime, RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  10, true);
+        } else if(type_id.equals("float#base60")) {
+            long sixty = 1;
+            double total = 0.0;
+            n.strBlowAwayCommas();
+            int ptr = ds.ptr.start;
+            int end = ptr + ds.len;
+            while(end > ptr) {
+                double bnum = 0;
+                int colon = end - 1;
+                while(colon >= ptr && ds.ptr.buffer[colon] != ':' ) {
+                    colon--;
+                }
+                bnum = Double.parseDouble(new String(ds.ptr.buffer, colon+1, end-(colon+1), "ISO-8859-1"));
+                total += bnum * sixty;
+                sixty *= 60;
+                end = colon;
+            }
+            obj = runtime.newFloat(total);
+        } else if(type_id.equals("float#nan")) {
+            obj = runtime.newFloat(Double.NaN);
+        } else if(type_id.equals("float#inf")) {
+            obj = runtime.newFloat(Double.POSITIVE_INFINITY);
+        } else if(type_id.equals("float#neginf")) {
+            obj = runtime.newFloat(Double.NEGATIVE_INFINITY);
+        } else if(type_id.startsWith("float")) {
+            n.strBlowAwayCommas();
+            obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+            obj = obj.callMethod(ctx, "to_f");
+        } else if(type_id.equals("timestamp#iso8601")) {
+            obj = makeTime(runtime, ds.ptr, ds.len);
+        } else if(type_id.equals("timestamp#spaced")) {
+            obj = makeTime(runtime, ds.ptr, ds.len);
+        } else if(type_id.equals("timestamp#ymd")) {
+            IRubyObject year = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 0, 4, "ISO-8859-1")));
+            IRubyObject mon = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 5, 2, "ISO-8859-1")));
+            IRubyObject day = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 8, 2, "ISO-8859-1")));
+                
+            RubyKernel.require(runtime.getTopSelf(), runtime.newString("date"), Block.NULL_BLOCK);
+
+            obj = runtime.getClass("Date").callMethod(ctx, "new", new IRubyObject[] {year, mon, day});
+        } else if(type_id.startsWith("timestamp")) {
+            obj = makeTime(runtime, ds.ptr, ds.len);
+        } else if(type_id.startsWith("merge")) {
+            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey").callMethod(ctx, "new");
+        } else if(type_id.startsWith("default")) {
+            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey").callMethod(ctx, "new");
+        } else if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
+            //                     System.err.println("houston, we have a symbol: " + n);
+            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "transfer", 
+                                                                                                                                       new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
+                                                                                                                                                         RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
+                                                                                                                                       });
+            //                     System.err.println(" resulting in: " + obj);
+        } else if(type_id.equals("str")) {
+            obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+        } else {
+            transferred = false;
+            obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+        }
+
+        ref[0] = obj;
+        return transferred;
+    }
+
     // yaml_org_handler
     public static boolean orgHandler(IRubyObject self, org.yecht.Node n, IRubyObject[] ref) {
 //         System.err.println("orgHandler(" + self + ", " + n + ")");
@@ -279,108 +389,8 @@ public class YechtYAML {
         try {
             switch(n.kind) {
             case Str:
-                transferred = true;
-                Data.Str ds = (Data.Str)n.data;
 //                 System.err.println(" we have type id: " + type_id + " for: " + n);
-                if(type_id == null) {
-                    obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                } else if(type_id.equals("null")) {
-                    obj = runtime.getNil();
-                } else if(type_id.equals("binary")) {
-                    obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                    obj.callMethod(ctx, "tr!", new IRubyObject[]{runtime.newString("\n\t "), runtime.newString("")});
-                    IRubyObject arr = obj.callMethod(ctx, "unpack", runtime.newString("m"));
-                    obj = ((RubyArray)arr).shift(ctx);
-                } else if(type_id.equals("bool#yes")) {
-                    obj = runtime.getTrue();
-                } else if(type_id.equals("bool#no")) {
-                    obj = runtime.getFalse();
-                } else if(type_id.equals("int#hex")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyNumeric.str2inum(runtime, RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len), 16, true);
-                } else if(type_id.equals("int#oct")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyNumeric.str2inum(runtime, RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  8, true);
-                } else if(type_id.equals("int#base60")) {
-                    long sixty = 1;
-                    long total = 0;
-                    n.strBlowAwayCommas();
-                    int ptr = ds.ptr.start;
-                    int end = ptr + ds.len;
-                    while(end > ptr) {
-                        long bnum = 0;
-                        int colon = end - 1;
-                        while(colon >= ptr && ds.ptr.buffer[colon] != ':' ) {
-                            colon--;
-                        }
-                        bnum = Integer.parseInt(new String(ds.ptr.buffer, colon+1, end-(colon+1), "ISO-8859-1"));
-                        total += bnum * sixty;
-                        sixty *= 60;
-                        end = colon;
-                    }
-                    obj = runtime.newFixnum(total);
-                } else if(type_id.startsWith("int")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyNumeric.str2inum(runtime, RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  10, true);
-                } else if(type_id.equals("float#base60")) {
-                    long sixty = 1;
-                    double total = 0.0;
-                    n.strBlowAwayCommas();
-                    int ptr = ds.ptr.start;
-                    int end = ptr + ds.len;
-                    while(end > ptr) {
-                        double bnum = 0;
-                        int colon = end - 1;
-                        while(colon >= ptr && ds.ptr.buffer[colon] != ':' ) {
-                            colon--;
-                        }
-                        bnum = Double.parseDouble(new String(ds.ptr.buffer, colon+1, end-(colon+1), "ISO-8859-1"));
-                        total += bnum * sixty;
-                        sixty *= 60;
-                        end = colon;
-                    }
-                    obj = runtime.newFloat(total);
-                } else if(type_id.equals("float#nan")) {
-                    obj = runtime.newFloat(Double.NaN);
-                } else if(type_id.equals("float#inf")) {
-                    obj = runtime.newFloat(Double.POSITIVE_INFINITY);
-                } else if(type_id.equals("float#neginf")) {
-                    obj = runtime.newFloat(Double.NEGATIVE_INFINITY);
-                } else if(type_id.startsWith("float")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                    obj = obj.callMethod(ctx, "to_f");
-                } else if(type_id.equals("timestamp#iso8601")) {
-                    obj = makeTime(runtime, ds.ptr, ds.len);
-                } else if(type_id.equals("timestamp#spaced")) {
-                    obj = makeTime(runtime, ds.ptr, ds.len);
-                } else if(type_id.equals("timestamp#ymd")) {
-                    IRubyObject year = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 0, 4, "ISO-8859-1")));
-                    IRubyObject mon = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 5, 2, "ISO-8859-1")));
-                    IRubyObject day = runtime.newFixnum(Integer.parseInt(new String(ds.ptr.buffer, 8, 2, "ISO-8859-1")));
-                
-                    RubyKernel.require(runtime.getTopSelf(), runtime.newString("date"), Block.NULL_BLOCK);
-
-                    obj = runtime.getClass("Date").callMethod(ctx, "new", new IRubyObject[] {year, mon, day});
-                } else if(type_id.startsWith("timestamp")) {
-                    obj = makeTime(runtime, ds.ptr, ds.len);
-                } else if(type_id.startsWith("merge")) {
-                    obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey").callMethod(ctx, "new");
-                } else if(type_id.startsWith("default")) {
-                    obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey").callMethod(ctx, "new");
-                } else if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
-//                     System.err.println("houston, we have a symbol: " + n);
-                    obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "transfer", 
-                                                                                                                                               new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
-                                                                                                                                                                 RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
-                                                                                                                                               });
-//                     System.err.println(" resulting in: " + obj);
-                } else if(type_id.equals("str")) {
-                    obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                } else {
-                    transferred = false;
-                    obj = RubyString.newString(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                }
+                transferred = handleScalar(runtime, n, type_id, ref);
                 break;
             case Seq:
                 if(type_id == null || "seq".equals(type_id)) {
@@ -395,6 +405,7 @@ public class YechtYAML {
                     }
                     ((RubyArray)obj).store(i, _obj);
                 }
+                ref[0] = obj;
                 break;
             case Map:
                 if(type_id == null || "map".equals(type_id)) {
@@ -407,10 +418,6 @@ public class YechtYAML {
                 for(int i = 0; i < dm.idx; i++) {
                     IRubyObject k = (IRubyObject)n.mapRead(MapPart.Key, i);
                     IRubyObject v = (IRubyObject)n.mapRead(MapPart.Value, i);
-                    if(null == k) {
-                        System.err.println("working on: " + n);
-                        System.err.println("k is nil!");
-                    }
                     if(null == v) {
                         v = runtime.getNil();
                     }
@@ -458,10 +465,10 @@ public class YechtYAML {
                     }
                 }
 
+                ref[0] = obj;
                 break;
             }
         } catch(java.io.UnsupportedEncodingException e) {}
-        ref[0] = obj;
 //         System.err.println(" - transferred: " + transferred);
         return transferred;
     }
@@ -888,60 +895,77 @@ public class YechtYAML {
         }        
     }
 
-    public static class GenericResolver {
-        // syck_genericresolver_node_import
-        @JRubyMethod
-        public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
-//             System.err.println("syck_genericresolver_node_import()");
-            Ruby runtime = self.getRuntime();
-            ThreadContext ctx = runtime.getCurrentContext();
-            org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
-            IRubyObject t = runtime.getNil();
-            IRubyObject obj = t;
-            IRubyObject v = t;
-            IRubyObject style = t;
 
-            if(n.type_id != null) {
-                t = runtime.newString(n.type_id);
+    public static class GenericResolver {
+        public static class Extra {
+            public IRubyObject quote1;
+            public IRubyObject quote2;
+            public IRubyObject fold;
+            public IRubyObject literal;
+            public IRubyObject plain;
+            public IRubyObject map;
+            public IRubyObject seq;
+            public IRubyObject inline;
+            public IRubyObject Scalar;
+            public IRubyObject Seq;
+            public IRubyObject Map;
+            public Ruby runtime;
+
+            public Extra(Ruby runtime) {
+                quote1 = runtime.newSymbol("quote1");
+                quote2 = runtime.newSymbol("quote2");
+                fold = runtime.newSymbol("fold");
+                literal = runtime.newSymbol("literal");
+                plain = runtime.newSymbol("plain");
+                map = runtime.newSymbol("map");
+                seq = runtime.newSymbol("seq");
+                inline = runtime.newSymbol("inline");
+                Scalar = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar");
+                Seq = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq");
+                Map = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map");
+                this.runtime = runtime;
             }
 
-            switch(n.kind) {
-            case Str:
+            public IRubyObject scalar(IRubyObject t, org.yecht.Node n, ThreadContext ctx) {
                 Data.Str dd = (Data.Str)n.data;
-                v = RubyString.newStringShared(runtime, dd.ptr.buffer, dd.ptr.start, dd.len);
+                IRubyObject v = RubyString.newStringShared(runtime, dd.ptr.buffer, dd.ptr.start, dd.len);
+                IRubyObject style = runtime.getNil();
                 switch(dd.style) {
                 case OneQuote:
-                    style = runtime.newSymbol("quote1");
+                    style = quote1;
                     break;
                 case TwoQuote:
-                    style = runtime.newSymbol("quote2");
+                    style = quote2;
                     break;
                 case Fold:
-                    style = runtime.newSymbol("fold");
+                    style = fold;
                     break;
                 case Literal:
-                    style = runtime.newSymbol("literal");
+                    style = literal;
                     break;
                 case Plain:
-                    style = runtime.newSymbol("plain");
+                    style = plain;
                     break;
                 }
-                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
-                break;
-            case Seq:
-                v = RubyArray.newArray(runtime, n.seqCount());
+                return Scalar.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+            }
+
+            public IRubyObject sequence(IRubyObject t, org.yecht.Node n, ThreadContext ctx) {
+                IRubyObject v = RubyArray.newArray(runtime, n.seqCount());
                 for(int i = 0; i < n.seqCount(); i++) {
-                    IRubyObject obj3 = (IRubyObject)n.seqRead(i);
-                    ((RubyArray)v).store(i, obj3);
+                    ((RubyArray)v).store(i, (IRubyObject)n.seqRead(i));
                 }
+                IRubyObject style = runtime.getNil();
                 if(((Data.Seq)n.data).style == SeqStyle.Inline) {
-                    style = runtime.newSymbol("inline");
+                    style = inline;
                 }
-                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
-                obj.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("seq"));
-                break;
-            case Map:
-                v = RubyHash.newHash(runtime);
+                IRubyObject obj = Seq.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+                obj.getInstanceVariables().setInstanceVariable("@kind", seq);
+                return obj;
+            }
+
+            public IRubyObject mapping(IRubyObject t, org.yecht.Node n, ThreadContext ctx) {
+                IRubyObject v = RubyHash.newHash(runtime);
                 for(int i = 0; i < n.mapCount(); i++) {
                     IRubyObject k3 = (IRubyObject)n.mapRead(MapPart.Key, i);
                     IRubyObject v3 = (IRubyObject)n.mapRead(MapPart.Value, i);
@@ -951,15 +975,40 @@ public class YechtYAML {
 
                     ((RubyHash)v).fastASet(k3, v3);
                 }
+                IRubyObject style = runtime.getNil();
                 if(((Data.Map)n.data).style == MapStyle.Inline) {
-                    style = runtime.newSymbol("inline");
+                    style = inline;
                 }
-                obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map").callMethod(ctx, "new", new IRubyObject[]{t, v, style});
-                obj.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("map"));
-                break;
+                IRubyObject obj = Map.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+                obj.getInstanceVariables().setInstanceVariable("@kind", map);
+                return obj;
+            }
+        }
+
+        // syck_genericresolver_node_import
+        @JRubyMethod
+        public static IRubyObject node_import(IRubyObject self, IRubyObject node) {
+//             System.err.println("syck_genericresolver_node_import()");
+            Ruby runtime = self.getRuntime();
+            ThreadContext ctx = runtime.getCurrentContext();
+            org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
+            IRubyObject t = runtime.getNil();
+            Extra x = (Extra)self.dataGetStruct();
+
+            if(n.type_id != null) {
+                t = runtime.newString(n.type_id);
             }
 
-            return obj;
+            switch(n.kind) {
+            case Str:
+                return x.scalar(t, n, ctx);
+            case Seq:
+                return x.sequence(t, n, ctx);
+            case Map:
+                return x.mapping(t, n, ctx);
+            }
+
+            return runtime.getNil();
         }        
     }
 

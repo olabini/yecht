@@ -89,6 +89,8 @@ public class YechtService implements BasicLibraryService {
         cEmitter.defineAnnotatedMethods(YechtYAML.YEmitter.class);
         cEmitter.addReadWriteAttribute(ctx, "level");
 
+        oGenericResolver.dataWrapStruct(new YechtYAML.GenericResolver.Extra(runtime));
+
         return true;
     }
 }
