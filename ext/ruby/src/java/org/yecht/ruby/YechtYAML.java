@@ -112,15 +112,15 @@ public class YechtYAML {
         // syck_badalias_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self, IRubyObject val) {
-            self.getInstanceVariables().setInstanceVariable("@name", val);
+            ((RubyObject)self).fastSetInternalVariable("@name", val);
             return self;
         }
 
         // syck_badalias_cmp
         @JRubyMethod(name = "<=>")
         public static IRubyObject cmp(IRubyObject alias1, IRubyObject alias2) {
-            IRubyObject str1 = alias1.getInstanceVariables().getInstanceVariable("@name");
-            IRubyObject str2 = alias2.getInstanceVariables().getInstanceVariable("@name");
+            IRubyObject str1 = (IRubyObject)((RubyObject)alias1).fastGetInternalVariable("@name");
+            IRubyObject str2 = (IRubyObject)((RubyObject)alias2).fastGetInternalVariable("@name");
             return str1.callMethod(alias1.getRuntime().getCurrentContext(), "<=>", str2);
         }
     }
@@ -263,7 +263,7 @@ public class YechtYAML {
         return null;
     }
 
-    private static boolean handleScalar(Ruby runtime, org.yecht.Node n, String type_id, IRubyObject[] ref) throws java.io.UnsupportedEncodingException {
+    private static boolean handleScalar(Ruby runtime, org.yecht.Node n, String type_id, IRubyObject[] ref, YAMLExtra x) throws java.io.UnsupportedEncodingException {
         Data.Str ds = (Data.Str)n.data;
         ThreadContext ctx = runtime.getCurrentContext();
         boolean transferred = true;
@@ -352,14 +352,14 @@ public class YechtYAML {
         } else if(type_id.startsWith("timestamp")) {
             obj = makeTime(runtime, ds.ptr, ds.len);
         } else if(type_id.startsWith("merge")) {
-            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey").callMethod(ctx, "new");
+            obj = x.MergeKey.callMethod(ctx, "new");
         } else if(type_id.startsWith("default")) {
-            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey").callMethod(ctx, "new");
+            obj = x.DefaultKey.callMethod(ctx, "new");
         } else if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
             //                     System.err.println("houston, we have a symbol: " + n);
-            obj = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "transfer", 
-                                                                                                                                       new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
-                                                                                                                                                         RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
+            obj = x.DefaultResolver.callMethod(ctx, "transfer", 
+                                               new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
+                                                                 RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
                                                                                                                                        });
             //                     System.err.println(" resulting in: " + obj);
         } else if(type_id.equals("str")) {
@@ -374,7 +374,7 @@ public class YechtYAML {
     }
 
     // yaml_org_handler
-    public static boolean orgHandler(IRubyObject self, org.yecht.Node n, IRubyObject[] ref) {
+    public static boolean orgHandler(IRubyObject self, org.yecht.Node n, IRubyObject[] ref, YAMLExtra x) {
 //         System.err.println("orgHandler(" + self + ", " + n + ")");
         final Ruby runtime = self.getRuntime();
         ThreadContext ctx = runtime.getCurrentContext();
@@ -390,7 +390,7 @@ public class YechtYAML {
             switch(n.kind) {
             case Str:
 //                 System.err.println(" we have type id: " + type_id + " for: " + n);
-                transferred = handleScalar(runtime, n, type_id, ref);
+                transferred = handleScalar(runtime, n, type_id, ref, x);
                 break;
             case Seq:
                 if(type_id == null || "seq".equals(type_id)) {
@@ -413,8 +413,8 @@ public class YechtYAML {
                 }
                 Data.Map dm = (Data.Map)n.data;
                 obj = RubyHash.newHash(runtime);
-                RubyClass cMergeKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey"));
-                RubyClass cDefaultKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey"));
+                RubyClass cMergeKey = x.MergeKey;
+                RubyClass cDefaultKey = x.DefaultKey;
                 for(int i = 0; i < dm.idx; i++) {
                     IRubyObject k = (IRubyObject)n.mapRead(MapPart.Key, i);
                     IRubyObject v = (IRubyObject)n.mapRead(MapPart.Value, i);
@@ -475,9 +475,11 @@ public class YechtYAML {
 
     public static class RubyLoadHandler implements NodeHandler {
         private Ruby runtime;
+        private YAMLExtra x;
 
-        public RubyLoadHandler(Ruby runtime) {
+        public RubyLoadHandler(Ruby runtime, YAMLExtra x) {
             this.runtime = runtime;
+            this.x = x;
         }
 
         // rb_syck_load_handler
@@ -492,10 +494,10 @@ public class YechtYAML {
             YParser.Extra bonus = (YParser.Extra)p.bonus;
             IRubyObject resolver = bonus.resolver;
             if(resolver.isNil()) {
-                resolver = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver");
+                resolver = x.DefaultResolver;
             }
             
-            IRubyObject _n = runtime.newData((RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Node"), n);
+            IRubyObject _n = new Node(runtime, x.Node, n, x);
             
             IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
 //             System.err.println(" node_import -> " + obj);
@@ -570,7 +572,7 @@ public class YechtYAML {
     public static void setModel(IRubyObject p, IRubyObject input, IRubyObject model) {
         Ruby runtime = p.getRuntime();
         Parser parser = (Parser)p.dataGetStructChecked();
-        parser.handler(new RubyLoadHandler(runtime));
+        parser.handler(new RubyLoadHandler(runtime, ((YAMLExtra)runtime.getModule("YAML").dataGetStruct())));
         if(model == runtime.newSymbol("Generic")) {
             p.callMethod(runtime.getCurrentContext(), "set_resolver", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("GenericResolver"));
         }
@@ -578,7 +580,7 @@ public class YechtYAML {
         parser.taguriExpansion(true);
 
         if(input.isNil()) {
-            input = p.getInstanceVariables().getInstanceVariable("@input");
+            input = (IRubyObject)((RubyObject)p).fastGetInternalVariable("@input");
         }
 
         if(input == runtime.newSymbol("bytecode")) {
@@ -653,7 +655,7 @@ public class YechtYAML {
         // syck_resolver_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self) {
-            self.getInstanceVariables().setInstanceVariable("@tags", RubyHash.newHash(self.getRuntime()));
+            ((RubyObject)self).fastSetInternalVariable("@tags", RubyHash.newHash(self.getRuntime()));
             return self;
         }
 
@@ -668,7 +670,7 @@ public class YechtYAML {
         // syck_resolver_use_types_at
         @JRubyMethod
         public static IRubyObject use_types_at(IRubyObject self, IRubyObject hsh) {
-            self.getInstanceVariables().setInstanceVariable("@tags", hsh);
+            ((RubyObject)self).fastSetInternalVariable("@tags", hsh);
             return self.getRuntime().getNil();
         }        
 
@@ -779,6 +781,7 @@ public class YechtYAML {
             final Ruby runtime = self.getRuntime();
             final ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
+            YAMLExtra x = ((Node)node).x;
             IRubyObject obj = null;
             switch(n.kind) {
             case Str:
@@ -796,8 +799,8 @@ public class YechtYAML {
             case Map:
                 Data.Map dm = (Data.Map)n.data;
                 obj = RubyHash.newHash(runtime);
-                RubyClass cMergeKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey"));
-                RubyClass cDefaultKey = (RubyClass)(((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey"));
+                RubyClass cMergeKey = x.MergeKey;
+                RubyClass cDefaultKey = x.DefaultKey;
                 RubyClass cHash = runtime.getHash();
                 RubyClass cArray = runtime.getArray();
                 
@@ -876,7 +879,7 @@ public class YechtYAML {
 //             System.err.println("syck_defaultresolver_node_import()");
             org.yecht.Node n = (org.yecht.Node)node.dataGetStructChecked();
             IRubyObject[] _obj = new IRubyObject[]{null};
-            if(!orgHandler(self, n, _obj)) {
+            if(!orgHandler(self, n, _obj, ((Node)node).x)) {
                 _obj[0] = self.callMethod(self.getRuntime().getCurrentContext(), "transfer", new IRubyObject[]{self.getRuntime().newString(n.type_id), _obj[0]});
             }
             return _obj[0];
@@ -960,7 +963,7 @@ public class YechtYAML {
                     style = inline;
                 }
                 IRubyObject obj = Seq.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
-                obj.getInstanceVariables().setInstanceVariable("@kind", seq);
+                ((RubyObject)obj).fastSetInternalVariable("@kind", seq);
                 return obj;
             }
 
@@ -980,7 +983,7 @@ public class YechtYAML {
                     style = inline;
                 }
                 IRubyObject obj = Map.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
-                obj.getInstanceVariables().setInstanceVariable("@kind", map);
+                ((RubyObject)obj).fastSetInternalVariable("@kind", map);
                 return obj;
             }
         }
@@ -1040,9 +1043,9 @@ public class YechtYAML {
             } else {
                 options = args[0].convertToHash();
             }
-            self.getInstanceVariables().setInstanceVariable("@options", options);
-            self.getInstanceVariables().setInstanceVariable("@input", self.getRuntime().getNil());
-            self.getInstanceVariables().setInstanceVariable("@resolver", self.getRuntime().getNil());
+            ((RubyObject)self).fastSetInternalVariable("@options", options);
+            ((RubyObject)self).fastSetInternalVariable("@input", self.getRuntime().getNil());
+            ((RubyObject)self).fastSetInternalVariable("@resolver", self.getRuntime().getNil());
 
             return self;
         }
@@ -1133,12 +1136,30 @@ public class YechtYAML {
         // syck_parser_set_resolver
         @JRubyMethod
         public static IRubyObject set_resolver(IRubyObject self, IRubyObject resolver) {
-            self.getInstanceVariables().setInstanceVariable("@resolver", resolver);
+            ((RubyObject)self).fastSetInternalVariable("@resolver", resolver);
             return self;
         }        
     }
 
-    public static class Node {
+    public static class Node extends org.jruby.RubyObject.Data {
+        public static final ObjectAllocator Allocator = new ObjectAllocator() {
+                public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+                    return new Node(runtime, klass, null, (YAMLExtra)runtime.getModule("YAML").dataGetStruct());
+                }
+            };
+
+        public YAMLExtra x;
+
+        public Node(Ruby runtime, RubyClass metaClass, Object data, YAMLExtra x) {
+            super(runtime, metaClass, data);
+            this.x = x;
+        }
+
+        public Node(RubyClass metaClass, Object data, YAMLExtra x) {
+            super(metaClass, data);
+            this.x = x;
+        }
+
         // syck_node_init_copy
         @JRubyMethod
         public static IRubyObject initialize_copy(IRubyObject copy, IRubyObject orig) {
@@ -1169,7 +1190,7 @@ public class YechtYAML {
             if(!type_id.isNil()) {
                 node.type_id = type_id.convertToString().toString();
             }
-            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
+            ((RubyObject)self).fastSetInternalVariable("@type_id", type_id);
             return type_id;
         }        
 
@@ -1180,14 +1201,15 @@ public class YechtYAML {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
             org.yecht.Node orig_n = (org.yecht.Node)self.dataGetStructChecked();
-            IRubyObject t = runtime.newData(self.getType(), null);
+            YAMLExtra x = ((Node)self).x;
+            IRubyObject t = new Node(runtime, self.getType(), null, x);
             org.yecht.Node n = null;
 
             switch(orig_n.kind) {
             case Map:
                 n = org.yecht.Node.allocMap();
                 t.dataWrapStruct(n);
-                Data.Map dm = (Data.Map)orig_n.data;
+                org.yecht.Data.Map dm = (org.yecht.Data.Map)orig_n.data;
                 for(int i=0; i < dm.idx; i++) {
                     IRubyObject k = ((IRubyObject)orig_n.mapRead(MapPart.Key, i)).callMethod(ctx, "transform");
                     IRubyObject v = ((IRubyObject)orig_n.mapRead(MapPart.Value, i)).callMethod(ctx, "transform");
@@ -1197,14 +1219,14 @@ public class YechtYAML {
             case Seq:
                 n = org.yecht.Node.allocSeq();
                 t.dataWrapStruct(n);
-                Data.Seq ds = (Data.Seq)orig_n.data;
+                org.yecht.Data.Seq ds = (org.yecht.Data.Seq)orig_n.data;
                 for(int i=0; i < ds.idx; i++) {
                     IRubyObject itm = ((IRubyObject)orig_n.seqRead(i)).callMethod(ctx, "transform");
                     n.seqAdd(itm);
                 }
                 break;
             case Str:
-                Data.Str dss = (Data.Str)orig_n.data;
+                org.yecht.Data.Str dss = (org.yecht.Data.Str)orig_n.data;
                 n = org.yecht.Node.newStr(dss.ptr, dss.len, dss.style);
                 t.dataWrapStruct(n);
                 break;
@@ -1220,8 +1242,49 @@ public class YechtYAML {
 
             n.id = t;
 //             System.err.println("syck_node_transform(), setting id of object on: " + n);
-            IRubyObject result = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver").callMethod(ctx, "node_import", t);
+            IRubyObject result = x.DefaultResolver.callMethod(ctx, "node_import", t);
             return result;
+        }
+    }
+
+    public static class YAMLExtra {
+        public IRubyObject quote1;
+        public IRubyObject quote2;
+        public IRubyObject fold;
+        public IRubyObject literal;
+        public IRubyObject plain;
+        public IRubyObject map;
+        public IRubyObject seq;
+        public IRubyObject scalar;
+        public IRubyObject inline;
+        public RubyClass Scalar;
+        public RubyClass Seq;
+        public RubyClass Map;
+        public IRubyObject DefaultResolver;
+        public RubyClass Node;
+        public RubyClass MergeKey;
+        public RubyClass DefaultKey;
+
+        public Ruby runtime;
+
+        public YAMLExtra(Ruby runtime) {
+            quote1 = runtime.newSymbol("quote1");
+            quote2 = runtime.newSymbol("quote2");
+            fold = runtime.newSymbol("fold");
+            literal = runtime.newSymbol("literal");
+            plain = runtime.newSymbol("plain");
+            map = runtime.newSymbol("map");
+            seq = runtime.newSymbol("seq");
+            scalar = runtime.newSymbol("scalar");
+            inline = runtime.newSymbol("inline");
+            Scalar = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar");
+            Seq = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq");
+            Map = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map");
+            DefaultResolver = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultResolver");
+            Node = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Node");
+            MergeKey = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("MergeKey");
+            DefaultKey = (RubyClass)((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("DefaultKey");
+            this.runtime = runtime;
         }
     }
 
@@ -1231,7 +1294,7 @@ public class YechtYAML {
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
 //                     System.err.println("ALLOCATING SCALAR");
                     org.yecht.Node node = org.yecht.Node.allocStr();
-                    IRubyObject obj = runtime.newData(klass, node);
+                    IRubyObject obj = new Node(runtime, klass, node, (YAMLExtra)runtime.getModule("YAML").dataGetStruct());
                     node.id = obj;
 //                     System.err.println("syck_scalar_alloc() -> setting id: " + node.id);
                     return obj;
@@ -1243,7 +1306,7 @@ public class YechtYAML {
         public static IRubyObject initialize(IRubyObject self, IRubyObject type_id, IRubyObject val, IRubyObject style) {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
-            self.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("scalar"));
+            ((RubyObject)self).fastSetInternalVariable("@kind", ((Node)self).x.scalar);
             self.callMethod(ctx, "type_id=", type_id);
             self.callMethod(ctx, "value=", val);
             self.callMethod(ctx, "style=", style);
@@ -1253,23 +1316,23 @@ public class YechtYAML {
         // syck_scalar_style_set
         @JRubyMethod(name = "style=")
         public static IRubyObject style_set(IRubyObject self, IRubyObject style) {
-            org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
+            YAMLExtra x = ((Node)self).x;
             Ruby runtime = self.getRuntime();
-            Data.Str ds = (Data.Str)node.data;
+            Data.Str ds = (Data.Str)((org.yecht.Node)self.dataGetStructChecked()).data;
             if(style.isNil()) {
                 ds.style = ScalarStyle.None;
-            } else if(style == runtime.newSymbol("quote1")) {
+            } else if(style == x.quote1) {
                 ds.style = ScalarStyle.OneQuote;
-            } else if(style == runtime.newSymbol("quote2")) {
+            } else if(style == x.quote2) {
                 ds.style = ScalarStyle.TwoQuote;
-            } else if(style == runtime.newSymbol("fold")) {
+            } else if(style == x.fold) {
                 ds.style = ScalarStyle.Fold;
-            } else if(style == runtime.newSymbol("literal")) {
+            } else if(style == x.literal) {
                 ds.style = ScalarStyle.Literal;
-            } else if(style == runtime.newSymbol("plain")) {
+            } else if(style == x.plain) {
                 ds.style = ScalarStyle.Plain;
             }
-            self.getInstanceVariables().setInstanceVariable("@style", style);
+            ((RubyObject)self).fastSetInternalVariable("@style", style);
             return self;
         }
 
@@ -1287,7 +1350,7 @@ public class YechtYAML {
             ds.ptr = Pointer.create(bss, 0);
             ds.len = bss.length;
             ds.style = ScalarStyle.None;
-            self.getInstanceVariables().setInstanceVariable("@value", val);
+            ((RubyObject)self).fastSetInternalVariable("@value", val);
             return val;
         }
     }
@@ -1298,7 +1361,7 @@ public class YechtYAML {
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
 //                     System.err.println("ALLOCATING SEQ");
                     org.yecht.Node node = org.yecht.Node.allocSeq();
-                    IRubyObject obj = runtime.newData(klass, node);
+                    IRubyObject obj = new Node(runtime, klass, node, (YAMLExtra)runtime.getModule("YAML").dataGetStruct());
                     node.id = obj;
 //                     System.err.println("syck_seq_alloc() -> setting id");
                     return obj;
@@ -1310,7 +1373,7 @@ public class YechtYAML {
         public static IRubyObject initialize(IRubyObject self, IRubyObject type_id, IRubyObject val, IRubyObject style) {
             Ruby runtime = self.getRuntime();
             ThreadContext ctx = runtime.getCurrentContext();
-            self.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("seq"));
+            ((RubyObject)self).fastSetInternalVariable("@kind", ((Node)self).x.seq);
             self.callMethod(ctx, "type_id=", type_id);
             self.callMethod(ctx, "value=", val);
             self.callMethod(ctx, "style=", style);
@@ -1332,7 +1395,7 @@ public class YechtYAML {
                 }
             }
 
-            self.getInstanceVariables().setInstanceVariable("@value", val);
+            ((RubyObject)self).fastSetInternalVariable("@value", val);
             return val;
         }
 
@@ -1348,20 +1411,20 @@ public class YechtYAML {
                 ds.style = SeqStyle.None;
             }
 
-            self.getInstanceVariables().setInstanceVariable("@style", style);
+            ((RubyObject)self).fastSetInternalVariable("@style", style);
             return self;
         }
 
         // syck_seq_add_m
         @JRubyMethod
         public static IRubyObject add(IRubyObject self, IRubyObject val) {
-            IRubyObject emitter = self.getInstanceVariables().getInstanceVariable("@emitter");
+            IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter");
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             if(emitter.respondsTo("node_export")) {
                 val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
             }
             node.seqAdd(val);
-            ((RubyArray)self.getInstanceVariables().getInstanceVariable("@value")).append(val);
+            ((RubyArray)((RubyObject)self).fastGetInternalVariable("@value")).append(val);
             return self;
         }
     }
@@ -1372,7 +1435,7 @@ public class YechtYAML {
                 public IRubyObject allocate(Ruby runtime, RubyClass klass) {
 //                     System.err.println("ALLOCATING MAP");
                     org.yecht.Node node = org.yecht.Node.allocMap();
-                    IRubyObject obj = runtime.newData(klass, node);
+                    IRubyObject obj = new Node(runtime, klass, node, (YAMLExtra)runtime.getModule("YAML").dataGetStruct());
                     node.id = obj;
 //                     System.err.println("syck_map_alloc() -> setting id");
                     return obj;
@@ -1400,7 +1463,7 @@ public class YechtYAML {
                 }
             }
 
-            self.getInstanceVariables().setInstanceVariable("@kind", runtime.newSymbol("seq")); // NOT A TYPO - Syck does the same
+            ((RubyObject)self).fastSetInternalVariable("@kind", ((Node)self).x.seq); // NOT A TYPO - Syck does the same
             self.callMethod(ctx, "type_id=", type_id);
             self.callMethod(ctx, "value=", val);
             self.callMethod(ctx, "style=", style);
@@ -1428,21 +1491,21 @@ public class YechtYAML {
                 }
             }
 
-            self.getInstanceVariables().setInstanceVariable("@value", val);
+            ((RubyObject)self).fastSetInternalVariable("@value", val);
             return val;
         }
 
         // syck_map_add_m
         @JRubyMethod
         public static IRubyObject add(IRubyObject self, IRubyObject key, IRubyObject val) {
-            IRubyObject emitter = self.getInstanceVariables().getInstanceVariable("@emitter");
+            IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter");
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             if(emitter.respondsTo("node_export")) {
                 key = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", key);
                 val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
             }
             node.mapAdd(key, val);
-            ((RubyHash)self.getInstanceVariables().getInstanceVariable("@value")).fastASet(key, val);
+            ((RubyHash)((RubyObject)self).fastGetInternalVariable("@value")).fastASet(key, val);
             return self;
         }
 
@@ -1452,13 +1515,13 @@ public class YechtYAML {
             org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
             Ruby runtime = self.getRuntime();
             Data.Map ds = (Data.Map)node.data;
-            if(style == runtime.newSymbol("inline")) {
+            if(style == ((Node)self).x.inline) {
                 ds.style = MapStyle.Inline;
             } else {
                 ds.style = MapStyle.None;
             }
 
-            self.getInstanceVariables().setInstanceVariable("@style", style);
+            ((RubyObject)self).fastSetInternalVariable("@style", style);
             return self;
         }
     }
@@ -1467,8 +1530,8 @@ public class YechtYAML {
         // syck_privatetype_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self, IRubyObject type_id, IRubyObject val) {
-            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
-            self.getInstanceVariables().setInstanceVariable("@value", val);
+            ((RubyObject)self).fastSetInternalVariable("@type_id", type_id);
+            ((RubyObject)self).fastSetInternalVariable("@value", val);
             return self;
         }
     }
@@ -1477,9 +1540,9 @@ public class YechtYAML {
         // syck_domaintype_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self, IRubyObject domain, IRubyObject type_id, IRubyObject val) {
-            self.getInstanceVariables().setInstanceVariable("@domain", domain);
-            self.getInstanceVariables().setInstanceVariable("@type_id", type_id);
-            self.getInstanceVariables().setInstanceVariable("@value", val);
+            ((RubyObject)self).fastSetInternalVariable("@domain", domain);
+            ((RubyObject)self).fastSetInternalVariable("@type_id", type_id);
+            ((RubyObject)self).fastSetInternalVariable("@value", val);
             return self;
         }
     }
@@ -1488,16 +1551,16 @@ public class YechtYAML {
         // syck_yobject_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self, IRubyObject klass, IRubyObject ivars) {
-            self.getInstanceVariables().setInstanceVariable("@class", klass);
-            self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
+            ((RubyObject)self).fastSetInternalVariable("@class", klass);
+            ((RubyObject)self).fastSetInternalVariable("@ivars", ivars);
             return self;
         }
 
         // syck_yobject_initialize
         @JRubyMethod
         public static IRubyObject yaml_initialize(IRubyObject self, IRubyObject klass, IRubyObject ivars) {
-            self.getInstanceVariables().setInstanceVariable("@class", klass);
-            self.getInstanceVariables().setInstanceVariable("@ivars", ivars);
+            ((RubyObject)self).fastSetInternalVariable("@class", klass);
+            ((RubyObject)self).fastSetInternalVariable("@ivars", ivars);
             return self;
         }
     }
@@ -1506,7 +1569,7 @@ public class YechtYAML {
     public static void outMark(IRubyObject emitter, IRubyObject node) {
         Emitter emitterPtr = (Emitter)emitter.dataGetStructChecked();
         YEmitter.Extra bonus = (YEmitter.Extra)emitterPtr.bonus;
-        node.getInstanceVariables().setInstanceVariable("@emitter", emitter);
+        ((RubyObject)node).fastSetInternalVariable("@emitter", emitter);
         if(!bonus.oid.isNil()) {
             ((RubyHash)bonus.data).fastASet(bonus.oid, node);
         }
@@ -1516,7 +1579,7 @@ public class YechtYAML {
         // syck_out_initialize
         @JRubyMethod
         public static IRubyObject initialize(IRubyObject self, IRubyObject emitter) {
-            self.getInstanceVariables().setInstanceVariable("@emitter", emitter);
+            ((RubyObject)self).fastSetInternalVariable("@emitter", emitter);
             return self;
         }
 
@@ -1528,7 +1591,7 @@ public class YechtYAML {
             IRubyObject type_id = args[0];
             IRubyObject style = args.length == 1 ? runtime.getNil() : args[1];
             IRubyObject map = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Map").callMethod(ctx, "new", new IRubyObject[]{type_id, RubyHash.newHash(runtime), style});
-            outMark(self.getInstanceVariables().getInstanceVariable("@emitter"), map);
+            outMark((IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter"), map);
             block.yield(ctx, map);
             return map;
         }
@@ -1541,7 +1604,7 @@ public class YechtYAML {
             IRubyObject type_id = args[0];
             IRubyObject style = args.length == 1 ? runtime.getNil() : args[1];
             IRubyObject seq = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Seq").callMethod(ctx, "new", new IRubyObject[]{type_id, RubyArray.newArray(runtime), style});
-            outMark(self.getInstanceVariables().getInstanceVariable("@emitter"), seq);
+            outMark((IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter"), seq);
             block.yield(ctx, seq);
             return seq;
         }
@@ -1555,7 +1618,7 @@ public class YechtYAML {
             IRubyObject str = args[1];
             IRubyObject style = args.length == 2 ? runtime.getNil() : args[2];
             IRubyObject scalar = ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Scalar").callMethod(ctx, "new", new IRubyObject[]{type_id, str, style});
-            outMark(self.getInstanceVariables().getInstanceVariable("@emitter"), scalar);
+            outMark((IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter"), scalar);
             return scalar;
         }
     }
@@ -1632,7 +1695,7 @@ public class YechtYAML {
                     emitter.handler(new RubyEmitterHandler(runtime));
                     emitter.outputHandler(new RubyOutputHandler(runtime));
                     
-                    pobj.getInstanceVariables().setInstanceVariable("@out", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Out").callMethod(runtime.getCurrentContext(), "new", pobj));
+                    ((RubyObject)pobj).fastSetInternalVariable("@out", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Out").callMethod(runtime.getCurrentContext(), "new", pobj));
                     return pobj;
                 }
             };
@@ -1641,7 +1704,7 @@ public class YechtYAML {
         // syck_emitter_set_resolver
         @JRubyMethod
         public static IRubyObject set_resolver(IRubyObject self, IRubyObject resolver) {
-            self.getInstanceVariables().setInstanceVariable("@resolver", resolver);
+            ((RubyObject)self).fastSetInternalVariable("@resolver", resolver);
             return self;
         }
 
@@ -1672,17 +1735,17 @@ public class YechtYAML {
                     bonus.port = options;
                 } else {
                     options = TypeConverter.convertToTypeWithCheck(options, runtime.getHash(), "to_hash");
-                    self.getInstanceVariables().setInstanceVariable("@options", options);
+                    ((RubyObject)self).fastSetInternalVariable("@options", options);
                 }
             } else {
                 options = RubyHash.newHash(runtime);
-                self.getInstanceVariables().setInstanceVariable("@options", options);
+                ((RubyObject)self).fastSetInternalVariable("@options", options);
             }
 
 
             emitter.headless = false;
-            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(0));
-            self.getInstanceVariables().setInstanceVariable("@resolver", runtime.getNil());
+            ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(0));
+            ((RubyObject)self).fastSetInternalVariable("@resolver", runtime.getNil());
 
             return self;
         }
@@ -1691,8 +1754,8 @@ public class YechtYAML {
         @JRubyMethod(optional = 1, frame = true)
         public static IRubyObject emit(IRubyObject self, IRubyObject[] _oid, Block proc) {
             Ruby runtime = self.getRuntime();
-            int level = RubyNumeric.fix2int(self.getInstanceVariables().getInstanceVariable("@level")) + 1;
-            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
+            int level = RubyNumeric.fix2int((IRubyObject)((RubyObject)self).fastGetInternalVariable("@level")) + 1;
+            ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(level));
             ThreadContext ctx = runtime.getCurrentContext();
             Emitter emitter = (Emitter)self.dataGetStructChecked();
             Extra bonus = (Extra)emitter.bonus;
@@ -1704,12 +1767,12 @@ public class YechtYAML {
             if(!oid.isNil() && bonus.data.callMethod(ctx, "has_key?", oid).isTrue()) {
                 symple = ((RubyHash)bonus.data).op_aref(ctx, oid);
             } else {
-                symple = proc.yield(ctx, self.getInstanceVariables().getInstanceVariable("@out"));
+                symple = proc.yield(ctx, (IRubyObject)((RubyObject)self).fastGetInternalVariable("@out"));
             }
             emitter.markNode(symple);
 
             level--;
-            self.getInstanceVariables().setInstanceVariable("@level", runtime.newFixnum(level));
+            ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(level));
             if(level == 0) {
                 emitter.emit(symple);
                 emitter.flush(0);

@@ -38,7 +38,7 @@ public class YechtService implements BasicLibraryService {
         cParser.addReadWriteAttribute(ctx, "resolver");
         cParser.addReadWriteAttribute(ctx, "input");
 
-        RubyClass cNode = rb_yecht.defineClassUnder("Node", runtime.getObject(), runtime.getObject().getAllocator());
+        RubyClass cNode = rb_yecht.defineClassUnder("Node", runtime.getObject(), YechtYAML.Node.Allocator);
         cNode.defineAnnotatedMethods(YechtYAML.Node.class);
         cNode.addReadWriteAttribute(ctx, "emitter");
         cNode.addReadWriteAttribute(ctx, "resolver");
@@ -90,6 +90,7 @@ public class YechtService implements BasicLibraryService {
         cEmitter.addReadWriteAttribute(ctx, "level");
 
         oGenericResolver.dataWrapStruct(new YechtYAML.GenericResolver.Extra(runtime));
+        rb_yaml.dataWrapStruct(new YechtYAML.YAMLExtra(runtime));
 
         return true;
     }
