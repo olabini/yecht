@@ -14,6 +14,8 @@ import org.jruby.RubyString;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.ThreadContext;
+import org.jruby.runtime.CallSite;
+import org.jruby.runtime.MethodIndex;
 
 public class GenericResolver {
     public static class Extra {
@@ -29,6 +31,9 @@ public class GenericResolver {
         public IRubyObject Seq;
         public IRubyObject Map;
         public Ruby runtime;
+        private final CallSite newScalarAdapter = MethodIndex.getFunctionalCallSite("new");
+        private final CallSite newSeqAdapter = MethodIndex.getFunctionalCallSite("new");
+        private final CallSite newMapAdapter = MethodIndex.getFunctionalCallSite("new");
 
         public Extra(Ruby runtime) {
             quote1 = runtime.newSymbol("quote1");
@@ -66,28 +71,33 @@ public class GenericResolver {
                 style = plain;
                 break;
             }
-            return Scalar.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+            return newScalarAdapter.call(ctx, Scalar, Scalar, t, v, style);
         }
 
         public IRubyObject sequence(IRubyObject t, org.yecht.Node n, ThreadContext ctx) {
-            IRubyObject v = RubyArray.newArray(runtime, n.seqCount());
-            for(int i = 0; i < n.seqCount(); i++) {
-                ((RubyArray)v).store(i, (IRubyObject)n.seqRead(i));
+            Data.Seq ds = (Data.Seq)n.data;
+            Object[] items = ds.items;
+            IRubyObject v = RubyArray.newArray(runtime, ds.idx);
+            for(int i = 0; i < ds.idx; i++) {
+                ((RubyArray)v).store(i, (IRubyObject)items[i]);
             }
             IRubyObject style = runtime.getNil();
             if(((Data.Seq)n.data).style == SeqStyle.Inline) {
                 style = inline;
             }
-            IRubyObject obj = Seq.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+            IRubyObject obj = newSeqAdapter.call(ctx, Seq, Seq, t, v, style);
             ((RubyObject)obj).fastSetInternalVariable("@kind", seq);
             return obj;
         }
 
         public IRubyObject mapping(IRubyObject t, org.yecht.Node n, ThreadContext ctx) {
+            Data.Map dm = (Data.Map)n.data;
+            Object[] keys = dm.keys;
+            Object[] vals = dm.values;
             IRubyObject v = RubyHash.newHash(runtime);
-            for(int i = 0; i < n.mapCount(); i++) {
-                IRubyObject k3 = (IRubyObject)n.mapRead(MapPart.Key, i);
-                IRubyObject v3 = (IRubyObject)n.mapRead(MapPart.Value, i);
+            for(int i = 0; i < dm.idx; i++) {
+                IRubyObject k3 = (IRubyObject)keys[i];
+                IRubyObject v3 = (IRubyObject)vals[i];
                 if(null == v3) {
                     v3 = runtime.getNil();
                 }
@@ -98,7 +108,7 @@ public class GenericResolver {
             if(((Data.Map)n.data).style == MapStyle.Inline) {
                 style = inline;
             }
-            IRubyObject obj = Map.callMethod(ctx, "new", new IRubyObject[]{t, v, style});
+            IRubyObject obj = newMapAdapter.call(ctx, Map, Map, t, v, style);
             ((RubyObject)obj).fastSetInternalVariable("@kind", map);
             return obj;
         }

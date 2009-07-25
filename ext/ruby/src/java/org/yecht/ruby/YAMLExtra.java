@@ -4,6 +4,8 @@ import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.runtime.CallSite;
+import org.jruby.runtime.MethodIndex;
 
 public class YAMLExtra {
     public IRubyObject quote1;
@@ -22,6 +24,20 @@ public class YAMLExtra {
     public RubyClass Node;
     public RubyClass MergeKey;
     public RubyClass DefaultKey;
+    public final CallSite type_id_set_ScalarAdapter = MethodIndex.getFunctionalCallSite("type_id=");
+    public final CallSite value_set_ScalarAdapter = MethodIndex.getFunctionalCallSite("value=");
+    public final CallSite style_set_ScalarAdapter = MethodIndex.getFunctionalCallSite("style=");
+
+    public final CallSite type_id_set_MapAdapter = MethodIndex.getFunctionalCallSite("type_id=");
+    public final CallSite value_set_MapAdapter = MethodIndex.getFunctionalCallSite("value=");
+    public final CallSite style_set_MapAdapter = MethodIndex.getFunctionalCallSite("style=");
+
+    public final CallSite type_id_set_SeqAdapter = MethodIndex.getFunctionalCallSite("type_id=");
+    public final CallSite value_set_SeqAdapter = MethodIndex.getFunctionalCallSite("value=");
+    public final CallSite style_set_SeqAdapter = MethodIndex.getFunctionalCallSite("style=");
+
+    public final CallSite node_export_EmitterAdapter = MethodIndex.getFunctionalCallSite("node_export");
+    public final CallSite keys_HashAdapter = MethodIndex.getFunctionalCallSite("keys");
 
     public Ruby runtime;
 

@@ -6,10 +6,13 @@ import org.yecht.Parser;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.runtime.CallSite;
+import org.jruby.runtime.MethodIndex;
 
 public class RubyLoadHandler implements NodeHandler {
     private Ruby runtime;
     private YAMLExtra x;
+    private final CallSite node_importAdapter = MethodIndex.getFunctionalCallSite("node_import");
 
     public RubyLoadHandler(Ruby runtime, YAMLExtra x) {
         this.runtime = runtime;
@@ -33,7 +36,7 @@ public class RubyLoadHandler implements NodeHandler {
             
         IRubyObject _n = new Node(runtime, x.Node, n, x);
             
-        IRubyObject obj = resolver.callMethod(runtime.getCurrentContext(), "node_import", _n);
+        IRubyObject obj = node_importAdapter.call(runtime.getCurrentContext(), resolver, resolver, _n);
         //             System.err.println(" node_import -> " + obj);
         if(n.id != null && !obj.isNil()) {
             if(n.id instanceof PossibleLinkNode) {

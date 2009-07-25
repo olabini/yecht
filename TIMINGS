@@ -80,3 +80,26 @@ JRuby with new Yecht
 1k big loads                    2.678000   0.000000   2.678000 (  2.678000)
 1k big dumps                   19.109000   0.000000  19.109000 ( 19.110000)
 1k big roundtrip               23.039000   0.000000  23.039000 ( 23.039000)
+
+JRuby with some slight optimizations to Yecht
+                                    user     system      total        real
+1k small parse                  0.188000   0.000000   0.188000 (  0.188000)
+1k small loads                  0.076000   0.000000   0.076000 (  0.076000)
+1k small dumps                  0.323000   0.000000   0.323000 (  0.323000)
+1k small roundtrip              0.362000   0.000000   0.362000 (  0.363000)
+1k big parse                    9.053000   0.000000   9.053000 (  9.053000)
+1k big loads                    2.262000   0.000000   2.262000 (  2.262000)
+1k big dumps                   18.551000   0.000000  18.551000 ( 18.551000)
+1k big roundtrip               21.675000   0.000000  21.675000 ( 21.675000)
+
+JRuby with some call site caching in Yecht
+                                    user     system      total        real
+1k small parse                  0.142000   0.000000   0.142000 (  0.142000)
+1k small loads                  0.076000   0.000000   0.076000 (  0.076000)
+1k small dumps                  0.278000   0.000000   0.278000 (  0.278000)
+1k small roundtrip              0.346000   0.000000   0.346000 (  0.346000)
+1k big parse                    9.042000   0.000000   9.042000 (  9.042000)
+1k big loads                    2.200000   0.000000   2.200000 (  2.200000)
+1k big dumps                   18.451000   0.000000  18.451000 ( 18.451000)
+1k big roundtrip               22.087000   0.000000  22.087000 ( 22.087000)
+
