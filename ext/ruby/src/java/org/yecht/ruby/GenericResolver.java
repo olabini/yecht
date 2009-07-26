@@ -86,7 +86,7 @@ public class GenericResolver {
                 style = inline;
             }
             IRubyObject obj = newSeqAdapter.call(ctx, Seq, Seq, t, v, style);
-            ((RubyObject)obj).fastSetInternalVariable("@kind", seq);
+            ((RubyObject)obj).fastSetInstanceVariable("@kind", seq);
             return obj;
         }
 
@@ -109,7 +109,7 @@ public class GenericResolver {
                 style = inline;
             }
             IRubyObject obj = newMapAdapter.call(ctx, Map, Map, t, v, style);
-            ((RubyObject)obj).fastSetInternalVariable("@kind", map);
+            ((RubyObject)obj).fastSetInstanceVariable("@kind", map);
             return obj;
         }
     }

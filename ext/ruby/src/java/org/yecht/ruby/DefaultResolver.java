@@ -306,31 +306,33 @@ public class DefaultResolver {
         if(type_id == null) {
             obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
         } else {
-            ObjectCreator oc = scalarTypes.get(type_id);
-            if(oc != null) {
-                obj = oc.create(runtime, n, ds);
+            if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
+                obj = x.DefaultResolver.callMethod(ctx, "transfer", 
+                                                   new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
+                                                                     RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
+                                                   });
             } else {
-                if(type_id.startsWith("int")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyNumeric.str2inum(runtime, RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  10, true);
-                } else if(type_id.startsWith("float")) {
-                    n.strBlowAwayCommas();
-                    obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
-                    obj = obj.callMethod(ctx, "to_f");
-                } else if(type_id.startsWith("timestamp")) {
-                    obj = makeTime(runtime, ds.ptr, ds.len);
-                } else if(type_id.startsWith("merge")) {
-                    obj = x.MergeKey.callMethod(ctx, "new");
-                } else if(type_id.startsWith("default")) {
-                    obj = x.DefaultKey.callMethod(ctx, "new");
-                } else if(ds.style == ScalarStyle.Plain && ds.len > 1 && ds.ptr.buffer[ds.ptr.start] == ':') {
-                    obj = x.DefaultResolver.callMethod(ctx, "transfer", 
-                                                       new IRubyObject[]{runtime.newString("tag:ruby.yaml.org,2002:sym"),
-                                                                         RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start+1, ds.len-1)
-                                                       });
+                ObjectCreator oc = scalarTypes.get(type_id);
+                if(oc != null) {
+                    obj = oc.create(runtime, n, ds);
                 } else {
-                    transferred = false;
-                    obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+                    if(type_id.startsWith("int")) {
+                        n.strBlowAwayCommas();
+                        obj = RubyNumeric.str2inum(runtime, RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len),  10, true);
+                    } else if(type_id.startsWith("float")) {
+                        n.strBlowAwayCommas();
+                        obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+                        obj = obj.callMethod(ctx, "to_f");
+                    } else if(type_id.startsWith("timestamp")) {
+                        obj = makeTime(runtime, ds.ptr, ds.len);
+                    } else if(type_id.startsWith("merge")) {
+                        obj = x.MergeKey.callMethod(ctx, "new");
+                    } else if(type_id.startsWith("default")) {
+                        obj = x.DefaultKey.callMethod(ctx, "new");
+                    } else {
+                        transferred = false;
+                        obj = RubyString.newStringShared(runtime, ds.ptr.buffer, ds.ptr.start, ds.len);
+                    }
                 }
             }
         }

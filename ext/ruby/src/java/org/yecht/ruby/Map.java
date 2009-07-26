@@ -48,7 +48,7 @@ public class Map {
             }
         }
 
-        ((RubyObject)self).fastSetInternalVariable("@kind", ((Node)self).x.seq); // NOT A TYPO - Syck does the same
+        ((RubyObject)self).fastSetInstanceVariable("@kind", ((Node)self).x.seq); // NOT A TYPO - Syck does the same
         self.callMethod(ctx, "type_id=", type_id);
         self.callMethod(ctx, "value=", val);
         self.callMethod(ctx, "style=", style);
@@ -76,21 +76,21 @@ public class Map {
             }
         }
 
-        ((RubyObject)self).fastSetInternalVariable("@value", val);
+        ((RubyObject)self).fastSetInstanceVariable("@value", val);
         return val;
     }
 
     // syck_map_add_m
     @JRubyMethod
     public static IRubyObject add(IRubyObject self, IRubyObject key, IRubyObject val) {
-        IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter");
+        IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInstanceVariable("@emitter");
         org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
         if(emitter.respondsTo("node_export")) {
             key = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", key);
             val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
         }
         node.mapAdd(key, val);
-        ((RubyHash)((RubyObject)self).fastGetInternalVariable("@value")).fastASet(key, val);
+        ((RubyHash)((RubyObject)self).fastGetInstanceVariable("@value")).fastASet(key, val);
         return self;
     }
 
@@ -106,7 +106,7 @@ public class Map {
             ds.style = MapStyle.None;
         }
 
-        ((RubyObject)self).fastSetInternalVariable("@style", style);
+        ((RubyObject)self).fastSetInstanceVariable("@style", style);
         return self;
     }
 }

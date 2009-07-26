@@ -39,7 +39,7 @@ public class Resolver {
     // syck_resolver_initialize
     @JRubyMethod
     public static IRubyObject initialize(IRubyObject self) {
-        ((RubyObject)self).fastSetInternalVariable("@tags", RubyHash.newHash(self.getRuntime()));
+        ((RubyObject)self).fastSetInstanceVariable("@tags", RubyHash.newHash(self.getRuntime()));
         return self;
     }
 
@@ -54,7 +54,7 @@ public class Resolver {
     // syck_resolver_use_types_at
     @JRubyMethod
     public static IRubyObject use_types_at(IRubyObject self, IRubyObject hsh) {
-        ((RubyObject)self).fastSetInternalVariable("@tags", hsh);
+        ((RubyObject)self).fastSetInstanceVariable("@tags", hsh);
         return self.getRuntime().getNil();
     }        
 

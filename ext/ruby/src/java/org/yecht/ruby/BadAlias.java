@@ -36,15 +36,15 @@ public class BadAlias extends RubyObject implements PossibleLinkNode {
     // syck_badalias_initialize
     @JRubyMethod
     public static IRubyObject initialize(IRubyObject self, IRubyObject val) {
-        ((RubyObject)self).fastSetInternalVariable("@name", val);
+        ((RubyObject)self).fastSetInstanceVariable("@name", val);
         return self;
     }
 
     // syck_badalias_cmp
     @JRubyMethod(name = "<=>")
     public static IRubyObject cmp(IRubyObject alias1, IRubyObject alias2) {
-        IRubyObject str1 = (IRubyObject)((RubyObject)alias1).fastGetInternalVariable("@name");
-        IRubyObject str2 = (IRubyObject)((RubyObject)alias2).fastGetInternalVariable("@name");
+        IRubyObject str1 = (IRubyObject)((RubyObject)alias1).fastGetInstanceVariable("@name");
+        IRubyObject str2 = (IRubyObject)((RubyObject)alias2).fastGetInstanceVariable("@name");
         return str1.callMethod(alias1.getRuntime().getCurrentContext(), "<=>", str2);
     }
 }

@@ -60,7 +60,7 @@ public class Node extends RubyObject.Data {
         if(!type_id.isNil()) {
             node.type_id = type_id.convertToString().toString();
         }
-        ((RubyObject)self).fastSetInternalVariable("@type_id", type_id);
+        ((RubyObject)self).fastSetInstanceVariable("@type_id", type_id);
         return type_id;
     }        
 

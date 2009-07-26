@@ -72,7 +72,7 @@ public class YParser {
         parser.taguriExpansion(true);
 
         if(input.isNil()) {
-            input = (IRubyObject)((RubyObject)p).fastGetInternalVariable("@input");
+            input = (IRubyObject)((RubyObject)p).fastGetInstanceVariable("@input");
         }
 
         if(input == runtime.newSymbol("bytecode")) {
@@ -93,9 +93,9 @@ public class YParser {
         } else {
             options = args[0].convertToHash();
         }
-        ((RubyObject)self).fastSetInternalVariable("@options", options);
-        ((RubyObject)self).fastSetInternalVariable("@input", self.getRuntime().getNil());
-        ((RubyObject)self).fastSetInternalVariable("@resolver", self.getRuntime().getNil());
+        ((RubyObject)self).fastSetInstanceVariable("@options", options);
+        ((RubyObject)self).fastSetInstanceVariable("@input", self.getRuntime().getNil());
+        ((RubyObject)self).fastSetInstanceVariable("@resolver", self.getRuntime().getNil());
 
         return self;
     }
@@ -186,7 +186,7 @@ public class YParser {
     // syck_parser_set_resolver
     @JRubyMethod
     public static IRubyObject set_resolver(IRubyObject self, IRubyObject resolver) {
-        ((RubyObject)self).fastSetInternalVariable("@resolver", resolver);
+        ((RubyObject)self).fastSetInstanceVariable("@resolver", resolver);
         return self;
     }        
 }

@@ -31,7 +31,7 @@ public class Seq {
     public static IRubyObject initialize(IRubyObject self, IRubyObject type_id, IRubyObject val, IRubyObject style) {
         Ruby runtime = self.getRuntime();
         ThreadContext ctx = runtime.getCurrentContext();
-        ((RubyObject)self).fastSetInternalVariable("@kind", ((Node)self).x.seq);
+        ((RubyObject)self).fastSetInstanceVariable("@kind", ((Node)self).x.seq);
         self.callMethod(ctx, "type_id=", type_id);
         self.callMethod(ctx, "value=", val);
         self.callMethod(ctx, "style=", style);
@@ -53,7 +53,7 @@ public class Seq {
             }
         }
 
-        ((RubyObject)self).fastSetInternalVariable("@value", val);
+        ((RubyObject)self).fastSetInstanceVariable("@value", val);
         return val;
     }
 
@@ -69,20 +69,20 @@ public class Seq {
             ds.style = SeqStyle.None;
         }
 
-        ((RubyObject)self).fastSetInternalVariable("@style", style);
+        ((RubyObject)self).fastSetInstanceVariable("@style", style);
         return self;
     }
 
     // syck_seq_add_m
     @JRubyMethod
     public static IRubyObject add(IRubyObject self, IRubyObject val) {
-        IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInternalVariable("@emitter");
+        IRubyObject emitter = (IRubyObject)((RubyObject)self).fastGetInstanceVariable("@emitter");
         org.yecht.Node node = (org.yecht.Node)self.dataGetStructChecked();
         if(emitter.respondsTo("node_export")) {
             val = emitter.callMethod(self.getRuntime().getCurrentContext(), "node_export", val);
         }
         node.seqAdd(val);
-        ((RubyArray)((RubyObject)self).fastGetInternalVariable("@value")).append(val);
+        ((RubyArray)((RubyObject)self).fastGetInstanceVariable("@value")).append(val);
         return self;
     }
 }

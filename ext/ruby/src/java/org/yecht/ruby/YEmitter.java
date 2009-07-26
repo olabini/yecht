@@ -33,7 +33,7 @@ public class YEmitter {
                 emitter.handler(new RubyEmitterHandler(runtime));
                 emitter.outputHandler(new RubyOutputHandler(runtime));
                     
-                ((RubyObject)pobj).fastSetInternalVariable("@out", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Out").callMethod(runtime.getCurrentContext(), "new", pobj));
+                ((RubyObject)pobj).fastSetInstanceVariable("@out", ((RubyModule)((RubyModule)runtime.getModule("YAML")).getConstant("Yecht")).getConstant("Out").callMethod(runtime.getCurrentContext(), "new", pobj));
                 return pobj;
             }
         };
@@ -42,7 +42,7 @@ public class YEmitter {
     // syck_emitter_set_resolver
     @JRubyMethod
     public static IRubyObject set_resolver(IRubyObject self, IRubyObject resolver) {
-        ((RubyObject)self).fastSetInternalVariable("@resolver", resolver);
+        ((RubyObject)self).fastSetInstanceVariable("@resolver", resolver);
         return self;
     }
 
@@ -73,17 +73,17 @@ public class YEmitter {
                 bonus.port = options;
             } else {
                 options = TypeConverter.convertToTypeWithCheck(options, runtime.getHash(), "to_hash");
-                ((RubyObject)self).fastSetInternalVariable("@options", options);
+                ((RubyObject)self).fastSetInstanceVariable("@options", options);
             }
         } else {
             options = RubyHash.newHash(runtime);
-            ((RubyObject)self).fastSetInternalVariable("@options", options);
+            ((RubyObject)self).fastSetInstanceVariable("@options", options);
         }
 
 
         emitter.headless = false;
-        ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(0));
-        ((RubyObject)self).fastSetInternalVariable("@resolver", runtime.getNil());
+        ((RubyObject)self).fastSetInstanceVariable("@level", runtime.newFixnum(0));
+        ((RubyObject)self).fastSetInstanceVariable("@resolver", runtime.getNil());
 
         return self;
     }
@@ -92,8 +92,8 @@ public class YEmitter {
     @JRubyMethod(optional = 1, frame = true)
     public static IRubyObject emit(IRubyObject self, IRubyObject[] _oid, Block proc) {
         Ruby runtime = self.getRuntime();
-        int level = RubyNumeric.fix2int((IRubyObject)((RubyObject)self).fastGetInternalVariable("@level")) + 1;
-        ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(level));
+        int level = RubyNumeric.fix2int((IRubyObject)((RubyObject)self).fastGetInstanceVariable("@level")) + 1;
+        ((RubyObject)self).fastSetInstanceVariable("@level", runtime.newFixnum(level));
         ThreadContext ctx = runtime.getCurrentContext();
         Emitter emitter = (Emitter)self.dataGetStructChecked();
         Extra bonus = (Extra)emitter.bonus;
@@ -105,12 +105,12 @@ public class YEmitter {
         if(!oid.isNil() && bonus.data.callMethod(ctx, "has_key?", oid).isTrue()) {
             symple = ((RubyHash)bonus.data).op_aref(ctx, oid);
         } else {
-            symple = proc.yield(ctx, (IRubyObject)((RubyObject)self).fastGetInternalVariable("@out"));
+            symple = proc.yield(ctx, (IRubyObject)((RubyObject)self).fastGetInstanceVariable("@out"));
         }
         emitter.markNode(symple);
 
         level--;
-        ((RubyObject)self).fastSetInternalVariable("@level", runtime.newFixnum(level));
+        ((RubyObject)self).fastSetInstanceVariable("@level", runtime.newFixnum(level));
         if(level == 0) {
             emitter.emit(symple);
             emitter.flush(0);
