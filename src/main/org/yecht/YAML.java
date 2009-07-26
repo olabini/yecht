@@ -17,7 +17,7 @@ public class YAML {
     public final static int YAML_MAJOR = 1;
     public final static int YAML_MINOR = 0;
 
-    public final static String YECHT_VERSION = "0.0.1";
+    public final static String YECHT_VERSION = "0.0.2";
     public final static String DOMAIN = "yaml.org,2002";
 
     public final static int ALLOC_CT = 8;

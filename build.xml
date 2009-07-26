@@ -90,7 +90,7 @@
   </target>
 
   <target name="jar" depends="compile" description="Create the yecht.jar file">
-    <jar destfile="${lib.dir}/yecht-0.0.1.jar">
+    <jar destfile="${lib.dir}/yecht-0.0.2.jar">
       <fileset dir="${yecht.classes.dir}">
         <include name="**/*.class"/>
         <include name="**/*.properties"/>
@@ -110,7 +110,7 @@
   </target>
 
   <target name="ext-ruby-jar" depends="ext-ruby-compile" description="Create the yecht-ruby.jar file">
-    <jar destfile="${lib.dir}/yecht-ruby-0.0.1.jar">
+    <jar destfile="${lib.dir}/yecht-ruby-0.0.2.jar">
       <fileset dir="${yecht.classes.dir}">
         <include name="**/*.class"/>
         <include name="**/*.properties"/>
@@ -125,8 +125,8 @@
   </target>
 
   <target name="dist-bin" depends="jar">
-    <tar destfile="${release.dir}/yecht-bin-0.0.1.tar.gz" compression="gzip">
-      <tarfileset dir="." prefix="yecht-0.0.1">
+    <tar destfile="${release.dir}/yecht-bin-0.0.2.tar.gz" compression="gzip">
+      <tarfileset dir="." prefix="yecht-0.0.2">
         <include name="lib/**"/>
         <include name="docs/**"/>
         <include name="LICENSE"/>
@@ -137,8 +137,8 @@
   </target>
   
   <target name="dist-src" depends="jar">
-    <tar destfile="${release.dir}/yecht-src-0.0.1.tar.gz" compression="gzip">
-      <tarfileset dir="." prefix="yecht-0.0.1">
+    <tar destfile="${release.dir}/yecht-src-0.0.2.tar.gz" compression="gzip">
+      <tarfileset dir="." prefix="yecht-0.0.2">
         <include name="lib/**"/>
         <include name="docs/**"/>
         <include name="src/**"/>
@@ -155,8 +155,8 @@
 
   <target name="clean" description="clean almost everything">
     <delete dir="${build.dir}"/>
-    <delete file="${lib.dir}/yecht-0.0.1.jar" quiet="true"/>
-    <delete file="${lib.dir}/yecht-ruby-0.0.1.jar" quiet="true"/>
+    <delete file="${lib.dir}/yecht-0.0.2.jar" quiet="true"/>
+    <delete file="${lib.dir}/yecht-ruby-0.0.2.jar" quiet="true"/>
   </target>
 
   <target name="full-clean" depends="clean" description="clean almost everything">
