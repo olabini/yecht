@@ -149,8 +149,12 @@ public class YParser {
             bonus.proc = proc;
         }
 
-        IRubyObject id = (IRubyObject)parser.parse();
-        IRubyObject result = id;
+        IRubyObject result = (IRubyObject)parser.parse();
+
+        if(result == null) {
+            result = runtime.getFalse();
+        }
+
         return result;
     }
 
@@ -179,6 +183,10 @@ public class YParser {
                 return runtime.getNil();
             }
 
+            if(v == null) {
+                v = runtime.getFalse();
+            }
+            
             proc.yield(ctx, v);
         }
     }
