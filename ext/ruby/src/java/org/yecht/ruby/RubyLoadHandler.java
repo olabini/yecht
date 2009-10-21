@@ -4,6 +4,7 @@ import org.yecht.NodeHandler;
 import org.yecht.Parser;
 
 import org.jruby.Ruby;
+import org.jruby.RubyObject;
 import org.jruby.RubyHash;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.CallSite;
@@ -47,7 +48,7 @@ public class RubyLoadHandler implements NodeHandler {
         }
 
         if(bonus.taint) {
-            obj.taint(runtime.getCurrentContext());
+            ((RubyObject)obj).taint(runtime.getCurrentContext());
         }
 
         if(bonus.proc != null) {
