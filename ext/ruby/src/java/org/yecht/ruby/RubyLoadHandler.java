@@ -47,7 +47,7 @@ public class RubyLoadHandler implements NodeHandler {
         }
 
         if(bonus.taint) {
-            obj.setTaint(true);
+            obj.taint(runtime.getCurrentContext());
         }
 
         if(bonus.proc != null) {
