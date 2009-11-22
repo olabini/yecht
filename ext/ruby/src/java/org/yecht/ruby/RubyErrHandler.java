@@ -25,7 +25,11 @@ public class RubyErrHandler implements ErrorHandler {
             if(lp < 0) {
                 lp = 0;
             }
-            String line = new String(p.buffer.buffer, lp, endl-lp, "ISO-8859-1");
+            int len = endl-lp;
+            if(len < 0) {
+                len = 0;
+            }
+            String line = new String(p.buffer.buffer, lp, len, "ISO-8859-1");
             String m1 = msg + " on line " + p.linect + ", col " + (p.cursor-lp) + ": `" + line + "'";
             throw runtime.newArgumentError(m1);
         } catch(java.io.UnsupportedEncodingException e) {
