@@ -1,5 +1,7 @@
 package org.yecht.ruby;
 
+import java.util.List;
+
 import org.yecht.Data;
 import org.yecht.ImplicitScanner;
 import org.yecht.MapPart;
@@ -128,11 +130,24 @@ public class Resolver {
                         obj.callMethod(ctx, "yaml_initialize", new IRubyObject[]{type, val});
                     } else if(!obj.isNil() && val instanceof RubyHash) {
                         final IRubyObject _obj = obj;
+                        final IRubyObject _val = val;
                         RubyEnumerable.callEach(runtime, ctx, val, new BlockCallback() {
                                 public IRubyObject call(ThreadContext _ctx, IRubyObject[] largs, Block blk) {
                                     IRubyObject ivname = ((RubyArray)largs[0]).entry(0);
                                     String ivn = "@" + ivname.convertToString().toString();
-                                    _obj.getInstanceVariables().setInstanceVariable(ivn, ((RubyArray)largs[0]).entry(1));
+                                    IRubyObject valueToSet = ((RubyArray)largs[0]).entry(1);
+                                    if(valueToSet instanceof PossibleLinkNode) {
+                                        List<StorageLink> sls = ((PossibleLinkNode)valueToSet).getLinks();
+                                        for(int i=0, j=sls.size(); i<j; i++) {
+                                            StorageLink sl = sls.get(i);
+                                            if(sl instanceof HashStorageLink) {
+                                                if(((HashStorageLink)sl).hash == _val) {
+                                                    sls.set(i, new ObjectStorageLink(_obj, ivn, valueToSet));
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _obj.getInstanceVariables().setInstanceVariable(ivn, valueToSet);
                                     return runtime.getNil();
                                 }
                             });

@@ -22,6 +22,10 @@ public class BadAlias extends RubyObject implements PossibleLinkNode {
     }
 
     private List<StorageLink> links = new LinkedList<StorageLink>();
+    public List<StorageLink> getLinks() {
+        return links;
+    }
+
     public void addLink(StorageLink link) {
         links.add(link);
     }

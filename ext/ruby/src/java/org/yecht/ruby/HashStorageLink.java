@@ -4,9 +4,9 @@ import org.jruby.RubyHash;
 import org.jruby.runtime.builtin.IRubyObject;
 
 class HashStorageLink extends StorageLink {
-    private final RubyHash hash;
-    private final IRubyObject key;
-    private final IRubyObject originalObject;
+    final RubyHash hash;
+    final IRubyObject key;
+    final IRubyObject originalObject;
 
     public HashStorageLink(IRubyObject h, IRubyObject key, IRubyObject originalObject) {
         this.hash = (RubyHash)h;
