@@ -30,12 +30,14 @@ import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyEnumerable;
+import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyKernel;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyString;
+import org.jruby.RubyTime;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.BlockCallback;
@@ -67,6 +69,7 @@ public class DefaultResolver {
         IRubyObject hour = runtime.newFixnum(0);
         IRubyObject min = runtime.newFixnum(0);
         IRubyObject sec = runtime.newFixnum(0);
+        IRubyObject addSec = runtime.newFixnum(0);
         long usec = 0;
 
         if(str.buffer[ptr] != 0 && ptr < pend) {
@@ -108,7 +111,14 @@ public class DefaultResolver {
             int end = ptr + 1;
             while(Character.isDigit((char)str.buffer[end]) && end < pend) end++;
             byte[] padded = new byte[]{'0', '0', '0', '0', '0', '0'};
-            System.arraycopy(str.buffer, ptr+1, padded, 0, end - (ptr+1));
+            int begin = ptr+1;
+            int extraSeconds = 0;
+            if(end - begin > 6) {
+                extraSeconds = (end - begin) - 6;
+                begin += extraSeconds;
+                addSec = runtime.newFixnum(extractInt(str.buffer, begin - extraSeconds, begin));
+            }
+            System.arraycopy(str.buffer, begin, padded, 0, end - begin);
             try {
                 usec = Long.parseLong(new String(padded, 0, 6, "ISO-8859-1"));
             } catch(java.io.UnsupportedEncodingException e) {}
@@ -146,11 +156,11 @@ public class DefaultResolver {
                 
                 IRubyObject time = runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec});
                 long tmp = RubyNumeric.num2long(time.callMethod(runtime.getCurrentContext(), "to_i")) - tz_offset;
-                return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "at", new IRubyObject[]{runtime.newFixnum(tmp), runtime.newFixnum(usec)});
+                return ((RubyTime)runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "at", new IRubyObject[]{runtime.newFixnum(tmp), runtime.newFixnum(usec)})).op_plus(addSec);
             } catch(java.io.UnsupportedEncodingException e) {}
         } else {
             // Make UTC time
-            return runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec,runtime.newFixnum(usec)});
+            return ((RubyTime)runtime.getClass("Time").callMethod(runtime.getCurrentContext(), "utc", new IRubyObject[]{year,mon,day,hour,min,sec,runtime.newFixnum(usec)})).op_plus(addSec);
         }
         System.err.println("oopsie, returning null");
         return null;
